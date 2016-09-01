@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="meu-app">
+<head>
+  <meta charset="utf-8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="stylesheet" href="css/app.min.css" />
+  <script src="js/app.min.js"></script>
+  <!-- inject:js -->
+</head>
+<body ng-controller="AppController">
+
+<ons-splitter>
+  <ons-splitter-side var="menu" side="left" width="200px" collapse="portrait" swipeable>
+    <ons-page>
+      <ons-list>
+        <ons-list-header>Menu</ons-list-header>
+        <ons-list-item>
+        This is a menu.
+        </ons-list-item>
+      </ons-list>
+    </ons-page>
+  </ons-splitter-side>
+  <ons-splitter-content>
+    <ons-tabbar>
+      <ons-tab label="Search" page="ons-templates/search.html" icon="rss"></ons-tab>
+      <ons-tab label="History" page="ons-templates/history.html" active></ons-tab>
+    </ons-tabbar>
+  </ons-splitter-content>
+</ons-splitter>
+</body>
+</html>

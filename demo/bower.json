@@ -1,0 +1,23 @@
+{
+  "name": "ng-meumobi-demo",
+  "authors": [
+    "Victor Dias <victor.dias@meumobi.com>"
+  ],
+  "description": "",
+  "main": "",
+  "license": "MIT",
+  "homepage": "http://meumobi.com",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "onsenui": "2.0.0-rc.17",
+    "angular": "1.5.8",
+    "angular-ui-router": "^0.3.1"
+  }
+}

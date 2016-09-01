@@ -1,0 +1,7 @@
+:checked + .tab-bar__button {
+  color: rgba(24,103,194,0.81);
+  background-color: #f7f7f7;
+}
+:checked + .tab-bar__button > .tab-bar__icon {
+  color: rgba(24,103,194,0.81);
+}

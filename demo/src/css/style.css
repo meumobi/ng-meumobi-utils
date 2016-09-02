@@ -1,7 +1,11 @@
-:checked + .tab-bar__button {
-  color: rgba(24,103,194,0.81);
-  background-color: #f7f7f7;
+.list__item__thumbnail {
+  width: 95px;
+  height: auto;
+  -webkit-border-radius: 2px;
+  border-radius: 2px;
 }
-:checked + .tab-bar__button > .tab-bar__icon {
-  color: rgba(24,103,194,0.81);
+
+.list__item__left {
+  padding: 12px 14px 12px 0;
 }
+  

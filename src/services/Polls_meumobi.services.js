@@ -21,14 +21,14 @@
       //get localstorage polls
       api.polls = function () {
         if (!Object.keys(polls).length && localStorage.polls)
-         polls = JSON.parse(localStorage.polls);
+         polls = angular.fromJson(localStorage.polls);
         return polls;
       },
       
       //add poll to localstorage
       api.addPoll = function (poll) {
         polls[poll._id] = poll;
-        localStorage.polls = JSON.stringify(polls);
+        localStorage.polls = angular.toJson(polls);
       },
 
       api.removePolls = function () {

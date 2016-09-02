@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" ng-app="meu-app">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -8,25 +8,46 @@
   <script src="js/app.min.js"></script>
   <!-- inject:js -->
 </head>
-<body ng-controller="AppController">
-
-<ons-splitter>
-  <ons-splitter-side var="menu" side="left" width="200px" collapse="portrait" swipeable>
-    <ons-page>
-      <ons-list>
-        <ons-list-header>Menu</ons-list-header>
-        <ons-list-item>
-        This is a menu.
-        </ons-list-item>
-      </ons-list>
+<body ng-controller="MainController">
+  <ons-template id="html/navigator.html">
+    <ons-navigator var="navi"></ons-navigator>
+  </ons-template>
+  <ons-toolbar>
+    <div class="left">
+      <ons-toolbar-button>
+        <ons-icon icon="bars"></ons-icon>
+      </ons-toolbar-button>
+    </div>
+    <div class="center">meumobi</div>
+    <div class="right">
+      <ons-toolbar-button>
+        <ons-icon icon="search"></ons-icon>
+      </ons-toolbar-button>
+      <ons-toolbar-button>
+        <ons-icon icon="ellipsis-v"></ons-icon>
+      </ons-toolbar-button>
+    </div>
+  </ons-toolbar>
+  
+  <ons-template id="html/master.html">
+    <ons-page ng-controller="LatestController">
+      <!-- Page content -->
+      <ons-toolbar>
+        <div class="center">Master</div>
+      </ons-toolbar>
+      <div style="text-align: center">
+        <br>
+        <ons-button ui-sref="navigator.master.detail">
+          Push Page
+        </ons-button>
+      </div>    
     </ons-page>
-  </ons-splitter-side>
-  <ons-splitter-content>
-    <ons-tabbar>
-      <ons-tab label="Search" page="ons-templates/search.html" icon="rss"></ons-tab>
-      <ons-tab label="History" page="ons-templates/history.html" active></ons-tab>
-    </ons-tabbar>
-  </ons-splitter-content>
-</ons-splitter>
+  </ons-template>
+  
+  <ons-tabbar var="meuTabbar">
+    <ons-tab label="Noticias" ui-sref="navigator.master" icon="rss"></ons-tab>
+    <ons-tab label="Agenda" ui-sref="navigator.master" icon="calendar"></ons-tab>
+    <ons-tab label="Contato" icon="envelope-o" ui-sref="contact"></ons-tab>
+  </ons-tabbar>
 </body>
 </html>

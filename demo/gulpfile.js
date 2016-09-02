@@ -8,7 +8,7 @@ var config = {
       './bower_components/angular/angular.min.js',
       './bower_components/onsenui/js/onsenui.min.js',
       './bower_components/angular-ui-router/release/angular-ui-router.min.js',
-			'./bower_components/onsenui/js/angular-onsenui.min.js'
+			'./bower_components/onsenui/js/angular-onsenui.js'
     ],
 
     css: {
@@ -16,12 +16,16 @@ var config = {
       append: [
         './bower_components/onsenui/css/onsen-css-components.css',
         './bower_components/onsenui/css/onsenui.css',
-        './bower_components/onsenui/css/font_awesome/css/font-awesome.min.css'
+        './bower_components/onsenui/css/ionicons/css/ionicons.min.css',
+        './bower_components/onsenui/css/font_awesome/css/font-awesome.min.css',
+        './bower_components/onsenui/css/material-design-iconic-font/css/material-design-iconic-font.min.css'
       ],
     },
 
     fonts: [
-      './bower_components/onsenui/css/font_awesome/fonts/fontawesome-webfont.*'
+      './bower_components/onsenui/css/font_awesome/fonts/fontawesome-webfont.*',
+      './bower_components/onsenui/css/ionicons/fonts/ionicons.*',
+      './bower_components/onsenui/css/material-design-iconic-font/fonts/Material-Design-Iconic-Font.*'
     ]
   },
   weinre: {
@@ -116,9 +120,9 @@ gulp.task('js', function() {
 	.pipe($.concat('app.js'))
 	.pipe($.ngAnnotate())
 	.pipe($.if(!config.debug, $.stripDebug()))
-	.pipe($.if(!config.debug, $.uglify({ mangle: false })))
+	//.pipe($.if(!config.debug, $.uglify({ mangle: false })))
 	.pipe($.rename({suffix: '.min'}))
-	.pipe($.sourcemaps.write('.'))
+	//.pipe($.sourcemaps.write('.'))
 	.pipe(gulp.dest(path.join(config.dest, 'js')));
 });
 

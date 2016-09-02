@@ -21,6 +21,6 @@ module.exports = function(config) {
 	config.debug = true;
     
 	// 3rd party components
-	//config.vendor.js.push('./bower_components/angular-touch/angular-touch.js');
+	config.vendor.js.push('./bower_components/ng-meumobi-utils/dist/ng-meumobi-utils.js');
 	//config.vendor.fonts.push('.bower_components/font/dist/*');
 };

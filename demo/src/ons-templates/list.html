@@ -1,0 +1,16 @@
+<ons-page>
+  <ons-toolbar>
+      <div class="center">List</div>
+    </ons-toolbar>
+  <ons-list ng-controller="LatestController as latest">
+    <ons-list-item modifier="tappable longdivider chevron" ng-repeat="item in latest.items track by $index" ui-sref="navigator.master.detail({id: $index})">
+      <div class="left">
+        <img class="list__item__thumbnail" ng-src="images/{{ item.images[0].path }}" />
+      </div>
+      <div class="center">
+        <span class="list__item__title">{{ item.title }}</span>
+        <span class="list__item__subtitle">On the Internet</span>
+      </div>
+    </ons-list-item>
+  </ons-list>
+</ons-page>

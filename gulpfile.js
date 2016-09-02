@@ -1,6 +1,6 @@
 var config = {
 	version: "1.0.0",
-	debug: false,
+	debug: true,
 	dest: 'dist'
 }
 
@@ -23,6 +23,7 @@ gulp.task('build', function () {
   // https://github.com/sindresorhus/strip-debug
 	.pipe($.if(!config.debug, $.stripDebug()))
 	.pipe($.if(!config.debug, $.uglify({ mangle: false })))
+  .pipe($.rename({suffix: '.min'}))
   .pipe($.sourcemaps.write())
   .pipe(gulp.dest(config.dest));
 })

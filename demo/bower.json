@@ -18,6 +18,7 @@
   "dependencies": {
     "onsenui": "2.0.0-rc.17",
     "angular": "1.5.8",
-    "angular-ui-router": "^0.3.1"
+    "angular-ui-router": "^0.3.1",
+    "ng-meumobi-utils": "^0.0.0"
   }
 }

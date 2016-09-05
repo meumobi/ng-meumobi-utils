@@ -14,7 +14,7 @@ path = require('path'),
 args = require('yargs').argv;
 
 gulp.task('build', function () {
-  gulp.src(['src/**/module.js', 'src/**/*.js'])
+  gulp.src(['src/**/module.js', 'src/filters/*.js', 'src/lib/*.js'])
   .pipe($.angularFilesort())
   .pipe($.sourcemaps.init())
   .pipe($.concat('ng-meumobi-utils.js'))
@@ -56,7 +56,7 @@ gulp.task('eslint', function() {
 gulp.task('fixmyjs', function() {
   var legacy = args.legacy ? args.legacy : true;
 	return gulp.src("./src/**/*.js")
-	.pipe($.fixmyjs({legacy: legacy}))
+	//.pipe($.fixmyjs({legacy: legacy}))
 	.pipe(gulp.dest("./src/"));
 });
 

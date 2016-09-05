@@ -12,37 +12,15 @@
   <ons-template id="html/navigator.html">
     <ons-navigator var="navi"></ons-navigator>
   </ons-template>
-  <ons-toolbar>
-    <div class="left">
-      <ons-toolbar-button>
-        <ons-icon icon="bars"></ons-icon>
-      </ons-toolbar-button>
-    </div>
-    <div class="center">meumobi</div>
-    <div class="right">
-      <ons-toolbar-button>
-        <ons-icon icon="search"></ons-icon>
-      </ons-toolbar-button>
-      <ons-toolbar-button>
-        <ons-icon icon="ellipsis-v"></ons-icon>
-      </ons-toolbar-button>
-    </div>
-  </ons-toolbar>
-  
-  <ons-template id="html/master.html">
-    <ons-page ng-controller="LatestController">
-      <!-- Page content -->
-      <ons-toolbar>
-        <div class="center">Master</div>
-      </ons-toolbar>
-      <div style="text-align: center">
-        <br>
-        <ons-button ui-sref="navigator.master.detail">
-          Push Page
-        </ons-button>
-      </div>    
-    </ons-page>
-  </ons-template>
+  <ons-popover direction="down" id="popover" cancelable>
+    <p>This is a popover!</p>
+  </ons-popover>
+  <script>
+    var showPopover = function(element) {
+      var popover = document.getElementById('popover');
+      popover.show(element);
+    };
+  </script>
   
   <ons-tabbar var="meuTabbar">
     <ons-tab label="Noticias" ui-sref="navigator.master" icon="rss"></ons-tab>

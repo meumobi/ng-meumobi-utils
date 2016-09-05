@@ -7,7 +7,13 @@
   'use strict';
 
   angular.module('ngMeumobi.Utils', [
-    'ngMeumobi.Utils.services',
-    'ngMeumobi.Utils.filters'
+    //'ngMeumobi.Utils.files',
+    //'ngMeumobi.Utils.api',
+    'ngMeumobi.Utils.loading',
+    //'ngMeumobi.Utils.connection',
+    'ngMeumobi.Utils.calendar',
+    'ngMeumobi.Utils.analytics',
+    //'ngMeumobi.Utils.filters'
   ]);
+  
 })();

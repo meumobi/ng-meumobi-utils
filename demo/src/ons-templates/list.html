@@ -1,7 +1,20 @@
 <ons-page>
   <ons-toolbar>
-      <div class="center">List</div>
-    </ons-toolbar>
+    <div class="left">
+      <ons-toolbar-button>
+        <ons-icon icon="bars"></ons-icon>
+      </ons-toolbar-button>
+    </div>
+    <div class="center">meumobi</div>
+    <div class="right">
+      <ons-toolbar-button>
+        <ons-icon icon="search"></ons-icon>
+      </ons-toolbar-button>
+      <ons-toolbar-button onclick="showPopover(this)">
+        <ons-icon icon="ellipsis-v"></ons-icon>
+      </ons-toolbar-button>
+    </div>
+  </ons-toolbar>
   <ons-list ng-controller="LatestController as latest">
     <ons-list-item modifier="tappable longdivider chevron" ng-repeat="item in latest.items track by $index" ui-sref="navigator.master.detail({id: $index})">
       <div class="left">

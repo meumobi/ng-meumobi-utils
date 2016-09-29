@@ -46,26 +46,91 @@ module ngMeumobi.Utils.api
   
 Promise.all: https://github.com/meumobi/IRmobi/issues/205
 # Analytics
-.module('ngMeumobi.Utils.analytics') 
-w/ Plugin google-analytics-plugin
-No need of ngCordova
+## Usage
+Add module 'ngMeumobi.Utils.analytics' as a dependency to your app unless you have already included one of its super-modules.
+On cordova add Plugin 'google-analytics-plugin' on config.xml.
 
-On Bootstrap
+## Init
+On Bootstrap and after deviceready event fired init module:
 
 ```js
 deviceReady(function() {
-  meuAnalytics.init(CONFIG.ANALYTICS.trackId);
+  ...
+  meuAnalytics.startTrackerWithId(trackId);
+  ...
+}
 ```
 
-TrackView
-meuAnalytics.trackView(current.$$route.title);
+## Track View
+On main controller
 
-TrackEvent
-meuAnalytics.trackEvent(...);
+```js
+  /*
+    Track current page
+  */
+	$rootScope.$on('$routeChangeSuccess', function(e, current, prev) {
+    if (current.$$route)
+      deviceReady(function(){
+        meuAnalytics.trackView(current.$$route.title);
+      });
+	});
 
-/!\ Could we change trackId during navigation (pre/post Auth)
+```
+
+## Track Event
+[Event in Google Analytics](https://www.optimizesmart.com/event-tracking-guide-google-analytics-simplified-version/) is the user’s interaction /activity with a webpage element.
+
+- **Event Category** – It is the name assigned to the group of similar events you want to track. For example: Profitable engagement, Reading, YouTube Videos etc
+- **Event Action** – It is the name assigned to the type of event you want to track for a particular webpage element. For example: play, pause, 0% etc.
+- **Event Label** – It is the name assigned to the web page element, whose users’ interaction you want to track. Event label can be a title of a video, title tag of a web page, name of a gadget, name of the downloadable file etc.
+- **Event value** – It is the numerical value assigned to the event you want to track. For example, an event value can be: download time, length of the video footage played
+
+
+TrackEvent: meuAnalytics.trackEvent(...);
+
+|----|----|----|----|
+|Category|Action|Label|Value|
+|----|----|----|----|
+|Events|Add to Calendar|{Title}|-|
+|Media|View|{Title}|{Length}|
+|Media|Download|{Title}|{Length}|
+|Media|Play|{Title}|{Duration}|
+|Media|Delete|{Title}|{Length}|
+|Social|Share {item.type || media}|{Title}|-|
+|External Links|Click|{Title}|-|
+|Authentication|Error||-|
+|Authentication|Forget Password||-|
+|Authentication|Login||-|
+|Authentication|Logout||-|
+|Account|Change Password||-|
+|Contact|Send||-|
+|Contact|Send||-|
+|Navigation|Swipe-left|{category.title}|-|
+|Navigation|Swipe-right|{category.title}|-|
+|Navigation|Scroll load|{category.title}|-|
+|Navigation|Open SideBar-left||-|
+|Navigation|Open SideBar-right||-|
+|Navigation|Close SideBar-left||-|
+|Navigation|Close SideBar-right||-|
+|Social|Rate Android app|{value}|-|
+|Social|Rate iOS app|{value}|-|
+|Polls|Vote|{index}|-|
+
+## Change GA Id during navigation
+
+## Track by User Id (custom) instead of default Client Id
+https://www.optimizesmart.com/complete-guide-cross-device-tracking-user-id-google-analytics/
+
 
 # Calendar
+## Dependencies
+
+- Cordova Plugin: [cordova-plugin-calendar](https://www.npmjs.com/package/cordova-plugin-calendar) allows you to manipulate the native calendar.
+- JS Libraries: 
+  - [moment](http://momentjs.com/): Parse, validate, manipulate, and display dates.
+  - [moment-timezone](http://momentjs.com/timezone/): Parse and display dates in any timezone.
+  - [angular-moment](https://github.com/urish/angular-moment): Moment.JS directives for Angular.JS (timeago and more).
+
 ## create event interactively
 Add Service 'meuCalendar'
 

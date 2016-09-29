@@ -37,6 +37,8 @@ meuCalendar
 - reset APP datas (as 1st launch)
 - get category/item with id without to call API
 - get performance without to call API
+- get current Category
+- get current Item
 - Helpers: getCategoriesTree
 - Private: getApiUrl
 - Helpers: getAssetsUrl

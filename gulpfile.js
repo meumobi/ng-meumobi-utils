@@ -23,6 +23,7 @@ gulp.task('build', function () {
   // https://github.com/sindresorhus/strip-debug
 	.pipe($.if(!config.debug, $.stripDebug()))
 	.pipe($.if(!config.debug, $.uglify({ mangle: false })))
+  .pipe(gulp.dest(config.dest))
   .pipe($.rename({suffix: '.min'}))
   .pipe($.sourcemaps.write())
   .pipe(gulp.dest(config.dest));
@@ -36,7 +37,7 @@ gulp.task('build', function () {
   $ npm install gulp-eslint eslint-plugin-angular eslint-config-angular
 */
 gulp.task('eslint', function() {
-	return gulp.src('./src/**/*.js')
+	return gulp.src('./src/lib/*.js')
 	.pipe($.eslint({
     'rules':{
             'quotes': [1, 'single'],

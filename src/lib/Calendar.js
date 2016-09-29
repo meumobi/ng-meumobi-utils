@@ -23,7 +23,7 @@
         defaultOptions = {
           title: null,
           address: null,
-          description: null,
+          description: '',
           start_date: null,
           end_date: null
         };

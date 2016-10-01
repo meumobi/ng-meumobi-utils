@@ -46,6 +46,7 @@ module ngMeumobi.Utils.api
   
 Promise.all: https://github.com/meumobi/IRmobi/issues/205
 # Analytics
+[Measuring the mobile Experience](http://blog.katworksgames.com/2015/10/24/measuring-the-mobile-experience/)
 ## Usage
 Add module 'ngMeumobi.Utils.analytics' as a dependency to your app unless you have already included one of its super-modules.
 On cordova add Plugin 'google-analytics-plugin' on config.xml.
@@ -86,15 +87,15 @@ On main controller
 - **Event value** – It is the numerical value assigned to the event you want to track. For example, an event value can be: download time, length of the video footage played
 
 
-TrackEvent: meuAnalytics.trackEvent(...);
+TrackEvent: meuAnalytics.trackEvent(Category, Action, Label, Value);
 
 |----|----|----|----|
 |Category|Action|Label|Value|
 |----|----|----|----|
-|Events|Add to Calendar|{Title}|-|
-|Media|View|{Title}|{Length}|
+|Events|Add to calendar|{Title}|-|
+|Media|Open|{Title}|{Length}|
 |Media|Download|{Title}|{Length}|
-|Media|Play|{Title}|{Duration}|
+|Media|Play {media.type|name}|{Title}|{Duration}|
 |Media|Delete|{Title}|{Length}|
 |Social|Share {item.type || media}|{Title}|-|
 |External Links|Click|{Title}|-|
@@ -120,7 +121,7 @@ TrackEvent: meuAnalytics.trackEvent(...);
 
 ## Track by User Id (custom) instead of default Client Id
 https://www.optimizesmart.com/complete-guide-cross-device-tracking-user-id-google-analytics/
-
+https://developers.google.com/analytics/devguides/collection/analyticsjs/cookies-user-id
 
 # Calendar
 ## Dependencies

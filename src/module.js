@@ -13,6 +13,7 @@
     //'ngMeumobi.Utils.connection',
     'ngMeumobi.Utils.calendar',
     'ngMeumobi.Utils.analytics',
+    'ngMeumobi.Utils.socialSharing'
     //'ngMeumobi.Utils.filters'
   ]);
   

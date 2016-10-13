@@ -49,7 +49,7 @@ angular
 	})
 	.filter('mediaClickLabel', mediaClickLabel)
 	.filter('mediaIconClass', mediaIconClass) 
-  .provider('meuFiles', ['Slug', meuFiles]); 
+  .provider('meuFiles', meuFiles); 
         
   function meuFiles() {
     var fileTransfers = {};

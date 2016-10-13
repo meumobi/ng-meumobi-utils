@@ -24,6 +24,7 @@
     "gulp-strip-debug": "^1.1.0",
     "gulp-task-listing": "^1.0.1",
     "gulp-todo": "^4.1.0",
+    "streamqueue": "^1.1.1",
     "yargs": "^5.0.0"
   },
   "scripts": {

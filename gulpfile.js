@@ -1,7 +1,14 @@
 var config = {
 	version: "1.0.0",
 	debug: true,
-	dest: 'dist'
+	dest: 'dist',
+	vendor: {
+		js: [
+			'./bower_components/jquery/dist/jquery.min.js',
+		],
+		css: [],
+		fonts: []
+	}
 }
 
 /*
@@ -11,10 +18,23 @@ var config = {
 var gulp = require('gulp')
 $ = require('gulp-load-plugins')(),
 path = require('path'),
-args = require('yargs').argv;
+args = require('yargs').argv,
+streamqueue = require('streamqueue'),
+fs = require('fs');
+
+if (fs.existsSync('./config.js')) {
+	var configFn = require('./config');
+	configFn(config);
+};
 
 gulp.task('build', function () {
-  gulp.src(['src/**/module.js', 'src/filters/*.js', 'src/lib/*.js'])
+	var streamBuildAction = streamqueue({
+		objectMode: true
+	  },
+    gulp.src(config.vendor.js),
+    gulp.src(['src/**/module.js', 'src/filters/*.js', 'src/lib/*.js'])
+  );
+  return streamBuildAction
   .pipe($.angularFilesort())
   .pipe($.sourcemaps.init())
   .pipe($.concat('ng-meumobi-utils.js'))

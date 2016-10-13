@@ -13,7 +13,9 @@
     //'ngMeumobi.Utils.connection',
     'ngMeumobi.Utils.calendar',
     'ngMeumobi.Utils.analytics',
-    'ngMeumobi.Utils.socialSharing'
+    'ngMeumobi.Utils.socialSharing',
+    'ngMeumobi.Utils.dialogs',
+    'ngMeumobi.Utils.files'
     //'ngMeumobi.Utils.filters'
   ]);
   

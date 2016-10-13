@@ -1,0 +1,25 @@
+{
+  "name": "ng-meumobi-utils",
+  "description": "ng-meumobi-utils was built to help make app development with meumobi faster and more efficient than ever before. It gives you simple AngularJS wrappers for the most popular Cordova and PhoneGap plugins available.",
+  "main": "src/module.js",
+  "authors": [
+    "Victor Dias"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "meumobi",
+    "angular"
+  ],
+  "homepage": "https://github.com/meumobi/ng-meumobi-utils",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular-slugify": "^1.0.1",
+    "js-md5": "^2.4.0"
+  }
+}

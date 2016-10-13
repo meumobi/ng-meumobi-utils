@@ -1,3 +1,5 @@
+ng-meumobi-utils was built to help make app development with meumobi faster and more efficient than ever before. It gives you simple AngularJS wrappers for the most popular Cordova and PhoneGap plugins available. 
+
 
 
 - [gulp-angular-filesort](https://www.npmjs.com/package/gulp-angular-filesort): Automatically sort AngularJS app files depending on module definitions and usage

@@ -21,6 +21,7 @@
     service.setOption = setOption;
     service.setOptions = setOptions;
     service.share = share;
+    service.shareViaWhatsAppToReceiver = shareViaWhatsAppToReceiver;
     
     return service;
 
@@ -29,10 +30,16 @@
     }
 
     function setOption(name, value) {
-      options.postfix = value;
+      options.name = value;
     }
 
-		function shareItem(item) {
+		function shareViaWhatsAppToReceiver(receiver) {
+      var social = $window.plugins && $window.plugins.socialsharing;
+		  
+      social.shareViaWhatsAppToReceiver(receiver, 'Message via WhatsApp', null /* img */, null /* url */, function() {$log.debug('share ok');});
+		}
+    
+    function shareItem(item) {
 			
 			var params = {
 			  message: item.description,
@@ -81,7 +88,6 @@
         chooserTitle: 'Pick an app' // Android only, you can override the default share sheet title
       }
     */
-      $log.debug(params);
       var d = $q.defer();			
       var social = $window.plugins && $window.plugins.socialsharing;
       
@@ -89,13 +95,11 @@
     
 			if (social) {
         if (options.postfix) {
-          $log.debug('Postfix: ' + options.postfix);
   				params.subject += options.postfix;
         }
       
         params.message = params.message && striptags(br2nl(params.message));
         params.subject = params.subject && striptags(br2nl(params.subject));
-
         var cb_share = {
           success: function(result) {
             d.resolve(result);
@@ -105,6 +109,7 @@
           }  
         };
         
+        $log.debug('shareWithOptions');
         $log.debug(params);
         social.shareWithOptions(params, cb_share.success, cb_share.fail); 
 			} else {

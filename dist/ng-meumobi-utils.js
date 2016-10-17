@@ -30,7 +30,7 @@
     }
 
     function setOption(name, value) {
-      options.name = value;
+      options[name] = value;
     }
 
 		function shareViaWhatsAppToReceiver(receiver) {
@@ -48,7 +48,7 @@
         url: item.hasOwnProperty('link') ? item.link : null
 			};
 
-      if (item.thumbnails.length > 0) {
+      if (item.thumbnails && item.thumbnails.length > 0) {
 				params.files.push(item.thumbnails[0].url);
 			}
 
@@ -67,10 +67,10 @@
 			// If media is saved locally (media.path) then share it
 			// Else share its link (media.url)
 			// Couldn't share together local pdf and link
-			if (media.hasOwnProperty('path')) {
-				params.files.push(media.path);
+			if (media.hasOwnProperty('fullPath')) {
+				params.files.push(media.fullPath);
 				params.url = null;
-			} else if (media.thumbnails.length > 0) {
+			} else if (media.thumbnails && media.thumbnails.length > 0) {
 				params.files.push(media.thumbnails[0].url);
 			}
 			
@@ -572,11 +572,15 @@ angular
         file.name = file.name || api.getFileName(file);
         file.path = file.path || api.getFilePath(file.name);
         file.status = api.getFileStatus(file.path);
+        
         /*
           If device not exists then app run on browser
         */
-				if (angular.isUndefined(device))
-          file.fullPath = api.getFileFullPath(file.path);
+        if (!typeof(device)) {
+          var fullPath = api.getFileFullPath(file.path);
+          if (api.isDownloaded(fullPath))
+            file.fullPath = fullPath;
+        };
 
         return file;
       };

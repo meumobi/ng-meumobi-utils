@@ -403,11 +403,15 @@ angular
         file.name = file.name || api.getFileName(file);
         file.path = file.path || api.getFilePath(file.name);
         file.status = api.getFileStatus(file.path);
+        
         /*
           If device not exists then app run on browser
         */
-				if (angular.isUndefined(device))
-          file.fullPath = api.getFileFullPath(file.path);
+        if (!typeof(device)) {
+          var fullPath = api.getFileFullPath(file.path);
+          if (api.isDownloaded(fullPath))
+            file.fullPath = fullPath;
+        };
 
         return file;
       };

@@ -177,8 +177,8 @@ angular
         var ext = file.extension || '';
         
         if (!ext && MIMES[file.type])
-          ext += '.' + MIMES[file.type].extension;
-        
+          ext = MIMES[file.type].extension;
+                
         var name = file.title || '';
         
         if (!name) {
@@ -186,8 +186,8 @@ angular
         } else {
           name = Slug.slugify(name);
         }
-                  
-        return name + ext;
+                          
+        return name + '.' + ext;
       };
       
       api.checkRepositoryConsistency = function(entries) {

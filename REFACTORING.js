@@ -1,3 +1,9 @@
+For better UX, prevent loading news at each visit to /items/list #153
+"bowerize" meumobi-api #16
+Replace httpwithfallback by angular-http-tag #230
+replace ng-switch by itemHeadline directive #227
+replace services by ng-meumobi-utils bower package #214
+
 MeuMobi.downloads.directory
 
 meuPushNotification.init
@@ -6,18 +12,8 @@ meuPushNotification.init
 meuDownloads.init
   meuDownloads.directory
 
-meuAnalytics.init
-
 meuConnection.init
   meuConnection.isOnline
-
-meuCalendar
-  .createEventInteractively(item)
-    .then(function (result) {
-      // success
-    }, function (err) {
-      // error
-    });
 
 
 // Load APP or filled w/ gulp
@@ -31,11 +27,46 @@ meuCalendar
   })
 })
 
+=== DONE
++ Helpers.lookup
+
+controllers/Items $rootScope.items = lookup(items)
+  replace by MeuAPI.Helpers.s
+  getItemsByCategoryId
+
+:category_id : [
+  :item_id: {},
+  :item_id: {},
+  ...
+],
+:category_id: [...]
+
+getItemsLatest => call API to sync (loading) on bootstrap and pull during session
+    
+controllers/
+  Events, main_controllers, show_controllers use $rootScope.items[:id], should be replaced by
+  
+
+=== TODO
+Component items-headlines
+  dynamic templateUrl (see IRmobi)
+
+
+
+
+
+
+
+
+
+
+
+
 - need to sync/erase performance and provide getters
-- items.load Next/Previous
+- decorateItem: items.load Next/Previous
 - separate get Device fingerPrint and save it => Device.setProperty(name, value) & Device.getProperties() & API.Devices.save
 - reset APP datas (as 1st launch)
-- get category/item with id without to call API
+
 - get performance without to call API
 - get current Category
 - get current Item
@@ -188,7 +219,7 @@ $rootScope.goToItem = function(item) {
 
 /*
   return var selectedItem
-  #inifomobi $rootScope.news[$routeParams.id];
+  #infomobi $rootScope.news[$routeParams.id];
 */
 service.getSelectedItem = getSelectedItem;
 

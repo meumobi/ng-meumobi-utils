@@ -11,11 +11,13 @@
     //'ngMeumobi.Utils.api',
     'ngMeumobi.Utils.loading',
     //'ngMeumobi.Utils.connection',
+    'ngMeumobi.Utils.phoneCall',
     'ngMeumobi.Utils.calendar',
     'ngMeumobi.Utils.analytics',
     'ngMeumobi.Utils.socialSharing',
     'ngMeumobi.Utils.dialogs',
-    'ngMeumobi.Utils.files'
+    'ngMeumobi.Utils.files',
+    'ngMeumobi.Utils.authentication'
     //'ngMeumobi.Utils.filters'
   ]);
   

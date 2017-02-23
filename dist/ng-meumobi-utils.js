@@ -122,6 +122,101 @@
 })();
 (function() {
 	'use strict';
+  
+	phoneCallCordova.$inject = ["$log", "$window"];
+	phoneCall.$inject = ["$log", "$window"];
+	meuPhoneCall.$inject = ["$injector", "$window"];
+	angular
+	.module('ngMeumobi.Utils.phoneCall', [])
+	.factory('phoneCallCordova', phoneCallCordova)
+	.factory('phoneCall', phoneCall)
+	.factory('meuPhoneCall', meuPhoneCall);
+  
+  /*
+    install   :     cordova plugin add https://github.com/Rohfosho/CordovaCallNumberPlugin.git
+  
+    How to use it: 
+    meuPhoneCall(number, true)
+    .then(function(result) {})
+    .catch(function(error) {});
+  */
+		
+	function phoneCallCordova($log, $window) {
+    
+    var service = {};
+    
+    service.call = call;
+    
+    return service;
+    
+    function call(number, bypassAppChooser) {
+      
+      if (angular.isUndefined(bypassAppChooser)) {
+        bypassAppChooser = false;
+      }
+      
+      return new Promise(function (resolve, reject) {
+        
+        var cb_callNumber = {
+          success: function(result) {
+            resolve(result);
+          },
+          fail: function(result) {
+            $log.debug(result);
+            reject(result);
+          }
+        };
+        
+				var CallNumber = $window.plugins && $window.plugins.CallNumber;
+        
+        if (CallNumber) {
+          CallNumber.callNumber(cb_callNumber.success, cb_callNumber.fail, number, bypassAppChooser);
+        } else {
+          throw new Error('Missing CordovaCallNumber Plugin');
+        }       
+      });
+    }
+	}
+  
+	function phoneCall($log, $window) {
+    
+    var service = {};
+    
+    service.call = call;
+    
+    return service;
+    
+    function call(number, bypassAppChooser) {
+      
+      if (angular.isUndefined(bypassAppChooser)) {
+        bypassAppChooser = false;
+      }
+      
+      return new Promise(function (resolve, reject) {
+        try {
+          var passedNumber = encodeURIComponent(number);
+          $window.location = 'tel:' + passedNumber;
+          resolve();
+        } catch (e) {
+          $log.debug('phoneCall catch');
+          $log.debug(e);
+          reject(e);
+        }
+      });
+    }
+	}
+  
+	function meuPhoneCall($injector, $window) {
+
+		if ($window.cordova) {
+			return $injector.get('phoneCallCordova');
+		} else {
+		  return $injector.get('phoneCall');
+		}
+	}
+})();
+(function() {
+	'use strict';
 
 	loadingInterceptor.$inject = ["$q", "$rootScope", "$log"];
 	angular
@@ -168,56 +263,60 @@
 (function () {
   'use strict';
   
-	mediaClickLabel.$inject = ["MIMES"];
-	mediaIconClass.$inject = ["MIMES"];
-angular
-	.module('ngMeumobi.Utils.files', ['slugifier'])
-	.constant('MIMES', {
-		'application/pdf': {
-			class: 'fa-file-pdf-o',
-			label: 'View',
-			extension: 'pdf',
-			download: true
-		},
-		'text/html': {
-			class: 'fa-rss',
-			label: 'Open',
-			extension: 'html',
-			download: false
-		},
-    'application/vnd.youtube.video+html': {
-			class: 'fa-youtube-play',
-			label: 'Play',
-			extension: 'html',
-			download: false
+mediaClickLabel.$inject = ["MIMES"];
+mediaIconClass.$inject = ["MIMES"];
+mediaOpenClass.$inject = ["MIMES"];
+  angular
+  .module('ngMeumobi.Utils.files', ['slugifier'])
+  .constant('MIMES', {
+    'application/pdf': {
+      class: 'fa-file-pdf-o',
+      label: 'View',
+      extension: 'pdf',
+      download: true
     },
-		'application/vnd.ms-excel': {
-			class: 'fa-file-excel-o',
-			label: 'View',
-			extension: 'xls',
-			download: true
-		},
-		'audio/mpeg': {
-			class: 'fa-file-audio-o',
-			label: 'Play',
-			extension: 'mp3',
-			download: true
-		},
-		'application/vnd.ms-powerpoint': {
-			class: 'fa-file-powerpoint-o',
-			label: 'View',
-			extension: 'ppt',
-			download: true,
-		},
-		'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
-			class: 'fa-file-excel-o',
-			label: 'View',
-			extension: 'xls',
-			download: true
-		}
-	})
-	.filter('mediaClickLabel', mediaClickLabel)
-	.filter('mediaIconClass', mediaIconClass) 
+    'text/html': {
+      class: 'fa-rss',
+      label: 'Open',
+      extension: 'html',
+      download: false
+    },
+    'application/vnd.youtube.video+html': {
+      class: 'fa-youtube-play',
+      openClass: 'fa-play',
+      label: 'Play',
+      extension: 'html',
+      download: false
+    },
+    'application/vnd.ms-excel': {
+      class: 'fa-file-excel-o',
+      label: 'View',
+      extension: 'xls',
+      download: true
+    },
+    'audio/mpeg': {
+      class: 'fa-file-audio-o',
+      label: 'Play',
+      openClass: 'fa-play',
+      extension: 'mp3',
+      download: true
+    },
+    'application/vnd.ms-powerpoint': {
+      class: 'fa-file-powerpoint-o',
+      label: 'View',
+      extension: 'ppt',
+      download: true,
+    },
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+      class: 'fa-file-excel-o',
+      label: 'View',
+      extension: 'xls',
+      download: true
+    }
+  })
+  .filter('mediaClickLabel', mediaClickLabel)
+  .filter('mediaIconClass', mediaIconClass)
+  .filter('mediaOpenClass', mediaOpenClass) 
   .provider('meuFiles', meuFiles); 
         
   function meuFiles() {
@@ -245,55 +344,55 @@ angular
       var service = {};
       
       /**
-       *  Api methods, available only on the inside the service
-       */
+      *  Api methods, available only on the inside the service
+      */
 
       api.fileErrorHandler = function(e) {
-      /*
+        /*
         List of Errors cordova-plugin-file
         https://github.com/apache/cordova-plugin-file#list-of-error-codes-and-meanings
         For the meaning I recommend to read https://wicg.github.io/entries-api/#common-types
-      */
+        */
         switch (e.code) {
-          case FileError.NOT_FOUND_ERR:
-            e.message = 'Requested file could not be found';
-            break;
-          case FileError.SECURITY_ERR:
-            e.message = 'SECURITY_ERR';
-            break;
-          case FileError.ABORT_ERR:
-            e.message = 'ABORT_ERR';
-            break;
-          case FileError.NOT_READABLE_ERR:
-            e.message = 'NOT_READABLE_ERR';
-            break;
-          case FileError.ENCODING_ERR:
-            e.message = 'Malformed URI';
-            break;
-          case FileError.NO_MODIFICATION_ALLOWED_ERR:
-            e.message = 'NO_MODIFICATION_ALLOWED_ERR';
-            break;
-          case FileError.INVALID_STATE_ERR:
-            e.message = 'INVALID_STATE_ERR';
-            break;
-          case FileError.SYNTAX_ERR:
-            e.message = 'SYNTAX_ERR';
-            break;
-          case FileError.INVALID_MODIFICATION_ERR:
-            e.message = 'INVALID_MODIFICATION_ERR';
-            break;
-          case FileError.QUOTA_EXCEEDED_ERR:
-            e.message = 'QUOTA_EXCEEDED_ERR';
-            break;
-          case FileError.TYPE_MISMATCH_ERR:
-            e.message = 'TYPE_MISMATCH_ERR';
-            break;
-          case FileError.PATH_EXISTS_ERR:
-            e.message = 'PATH_EXISTS_ERR';
-            break;
-          default:
-            e.message = 'Unknown Error';
-            break;
+        case FileError.NOT_FOUND_ERR:
+          e.message = 'Requested file could not be found';
+          break;
+        case FileError.SECURITY_ERR:
+          e.message = 'SECURITY_ERR';
+          break;
+        case FileError.ABORT_ERR:
+          e.message = 'ABORT_ERR';
+          break;
+        case FileError.NOT_READABLE_ERR:
+          e.message = 'NOT_READABLE_ERR';
+          break;
+        case FileError.ENCODING_ERR:
+          e.message = 'Malformed URI';
+          break;
+        case FileError.NO_MODIFICATION_ALLOWED_ERR:
+          e.message = 'NO_MODIFICATION_ALLOWED_ERR';
+          break;
+        case FileError.INVALID_STATE_ERR:
+          e.message = 'INVALID_STATE_ERR';
+          break;
+        case FileError.SYNTAX_ERR:
+          e.message = 'SYNTAX_ERR';
+          break;
+        case FileError.INVALID_MODIFICATION_ERR:
+          e.message = 'INVALID_MODIFICATION_ERR';
+          break;
+        case FileError.QUOTA_EXCEEDED_ERR:
+          e.message = 'QUOTA_EXCEEDED_ERR';
+          break;
+        case FileError.TYPE_MISMATCH_ERR:
+          e.message = 'TYPE_MISMATCH_ERR';
+          break;
+        case FileError.PATH_EXISTS_ERR:
+          e.message = 'PATH_EXISTS_ERR';
+          break;
+        default:
+          e.message = 'Unknown Error';
+          break;
         }
         $log.debug('Error: ' + e.message);
         
@@ -301,29 +400,29 @@ angular
       };
       
       api.fileTransferErrorHandler = function(e) {
-      /*
+        /*
         A FileTransferError object is passed to an error callback when an error occurs.
         https://github.com/apache/cordova-plugin-file-transfer#filetransfererror
-      */
+        */
         switch (e.code) {
-          case FileTransferError.FILE_NOT_FOUND_ERR:
-            e.message = 'FILE_NOT_FOUND_ERR';
-            break;
-          case FileTransferError.INVALID_URL_ERR:
-            e.message = 'INVALID_URL_ERR';
-            break;
-          case FileTransferError.CONNECTION_ERR:
-            e.message = 'CONNECTION_ERR';
-            break;
-          case FileTransferError.ABORT_ERR:
-            e.message = 'Operation aborted';
-            break;
-          case FileTransferError.NOT_MODIFIED_ERR:
-            e.message = 'NOT_MODIFIED_ERR';
-            break;
-          default:
-            e.message = 'Unknown Error';
-            break;
+        case FileTransferError.FILE_NOT_FOUND_ERR:
+          e.message = 'FILE_NOT_FOUND_ERR';
+          break;
+        case FileTransferError.INVALID_URL_ERR:
+          e.message = 'INVALID_URL_ERR';
+          break;
+        case FileTransferError.CONNECTION_ERR:
+          e.message = 'CONNECTION_ERR';
+          break;
+        case FileTransferError.ABORT_ERR:
+          e.message = 'Operation aborted';
+          break;
+        case FileTransferError.NOT_MODIFIED_ERR:
+          e.message = 'NOT_MODIFIED_ERR';
+          break;
+        default:
+          e.message = 'Unknown Error';
+          break;
         }
         $log.debug('Error: ' + e.message);
         
@@ -332,7 +431,7 @@ angular
 
       api.getFilesFromLocalStorage = function() {
         /*
-          Check if files is already loaded (if not is empty)
+        Check if files is already loaded (if not is empty)
         TODO: is loading localStorage['files] for each media, should be optimized to only load once for all
         */
         if (!Object.keys(files).length  && localStorage['files']) { 
@@ -361,8 +460,8 @@ angular
       
       api.checkRepositoryConsistency = function(entries) {
         /*
-          id must be equals to file.path
-          and fullPath can be updated if App is updated (iOS)
+        id must be equals to file.path
+        and fullPath can be updated if App is updated (iOS)
         */
         var obj = {};
         Object.keys(entries).forEach(function(key,index) {
@@ -377,11 +476,11 @@ angular
       // Returns the full absolute path from the root to the FileEntry
       api.getFileFullPath = function (filePath) {
         var directory = null;
-				if (device.platform == 'Android') {
-					directory = cordova.file.externalDataDirectory;
-				} else {
-	        directory = cordova.file.dataDirectory;
-				}
+        if (device.platform == 'Android') {
+          directory = cordova.file.externalDataDirectory;
+        } else {
+          directory = cordova.file.dataDirectory;
+        }
         return directory + filePath;
       };
       
@@ -397,7 +496,7 @@ angular
       
       //remove file from localstorage
       api.removeFile = function(id) {
-  			delete files[id];
+        delete files[id];
         localStorage['files'] = angular.toJson(files);
       };
       
@@ -420,8 +519,8 @@ angular
       
       api.isDownloaded = function(filePath) {
         /*
-          TODO: If status is downloaded but local file is missing then return FALSE
-          Keep record on localstorage to appears as file already downloaded, user can re-download if needed
+        TODO: If status is downloaded but local file is missing then return FALSE
+        Keep record on localstorage to appears as file already downloaded, user can re-download if needed
         */
         return !!api.getFilesFromLocalStorage()[filePath];
       };
@@ -441,8 +540,8 @@ angular
       };
     
       /**
-       * Service methods, that are public and available for any resource
-       */
+      * Service methods, that are public and available for any resource
+      */
       // File available statuses, best for debug and maitain than just string.
       
       service.download = download;
@@ -456,8 +555,8 @@ angular
       return service;
       
       /*
-        Install: cordova plugin add cordova-plugin-file-opener2
-        https://www.npmjs.com/package/cordova-plugin-file-opener2
+      Install: cordova plugin add cordova-plugin-file-opener2
+      https://www.npmjs.com/package/cordova-plugin-file-opener2
       */
       
       function isDownloadable(file) {
@@ -497,107 +596,113 @@ angular
         
         file.fullPath = api.getFileFullPath(file.path);
         api.getFileEntry(file.fullPath)
-          .then(function(entry) {
-            cb_entry.success(entry);
-          }, function(e) {
-            cb_entry.fail(e);
-          }
-        );
+        .then(function(entry) {
+          cb_entry.success(entry);
+        }, function(e) {
+          cb_entry.fail(e);
+        }
+      );
         
-        return q.promise;
-      };
+      return q.promise;
+    };
       
-      function download(file) {
-        var q = $q.defer();
-        var ft = new FileTransfer();
-        var uri = encodeURI(file.url);
+    function download(file) {
+      var q = $q.defer();
+      var ft = new FileTransfer();
+      var uri = encodeURI(file.url);
         
-        file.status = statuses.downloading;
-        file.fullPath = api.getFileFullPath(file.path);
-        fileTransfers[file.path] = ft;
+      file.status = statuses.downloading;
+      file.fullPath = api.getFileFullPath(file.path);
+      fileTransfers[file.path] = ft;
 
-        ft.onprogress = function (progress) {
-          q.notify(progress);
-        };
+      ft.onprogress = function (progress) {
+        q.notify(progress);
+      };
 
-        q.promise.abort = function () {
-          ft.abort();
-        };
+      q.promise.abort = function () {
+        ft.abort();
+      };
 
-        var cb_download = {
-          success: function(fileEntry) {
-            file.status = statuses.downloaded;
-						api.addFile(file);
-						delete fileTransfers[file.path];
+      var cb_download = {
+        success: function(fileEntry) {
+          file.status = statuses.downloaded;
+          api.addFile(file);
+          delete fileTransfers[file.path];
+          q.resolve(file);
+        },
+        fail: function(error) {
+          $log.debug(error);
+          file.status = statuses.download;
+          error = api.fileTransferErrorHandler(error);
+          delete fileTransfers[file.path];
+          q.reject(error);
+        }
+      };
+      ft.download(uri, file.fullPath, cb_download.success, cb_download.fail, false);
+        
+      return q.promise;
+    };
+      
+    function remove(file) {
+      var q = $q.defer();
+
+      file.fullPath = api.getFileFullPath(file.path);
+      api.getFileEntry(file.fullPath)
+      .then(function(entry) {
+        entry.remove(
+          function (status) {
+            api.removeFile(file.path);
+            file.status = statuses.download;
             q.resolve(file);
-          },
-          fail: function(error) {
-            $log.debug(error);
-            file.status = statuses.download;
-            error = api.fileTransferErrorHandler(error);
-						delete fileTransfers[file.path];
-						q.reject(error);
-          }
-        };
-        ft.download(uri, file.fullPath, cb_download.success, cb_download.fail, false);
-        
-        return q.promise;
-      };
-      
-      function remove(file) {
-        var q = $q.defer();
-
-        file.fullPath = api.getFileFullPath(file.path);
-        api.getFileEntry(file.fullPath)
-          .then(function(entry) {
-            entry.remove(
-              function (status) {
-                api.removeFile(file.path);
-                file.status = statuses.download;
-                q.resolve(file);
-              },function (error) {
-                q.reject(error);
-              }
-            );
-          }, function(error) {
-            file.status = statuses.download;
+          },function (error) {
             q.reject(error);
           }
         );
-        
-        return q.promise;
+      }, function(error) {
+        file.status = statuses.download;
+        q.reject(error);
       }
-      
-      function decorateFile(file) {
-        file.name = file.name || api.getFileName(file);
-        file.path = file.path || api.getFilePath(file.name);
-        file.status = api.getFileStatus(file.path);
+    );
         
-        /*
-          If device not exists then app run on browser
-        */
-        if (!typeof(device)) {
-          var fullPath = api.getFileFullPath(file.path);
-          if (api.isDownloaded(fullPath))
-            file.fullPath = fullPath;
-        };
+    return q.promise;
+  }
+      
+  function decorateFile(file) {
+    file.name = file.name || api.getFileName(file);
+    file.path = file.path || api.getFilePath(file.name);
+    file.status = api.getFileStatus(file.path);
+        
+    /*
+    If device not exists then app run on browser
+    */
+    if (!typeof(device)) {
+      var fullPath = api.getFileFullPath(file.path);
+      if (api.isDownloaded(fullPath))
+        file.fullPath = fullPath;
+    };
 
-        return file;
-      };
-    }];
+    return file;
   };
+}];
+};
   
-	function mediaClickLabel(MIMES) {
-		return function(type) {
-			return MIMES[type] ? MIMES[type].label : 'Open';
-		};
-	}
+function mediaClickLabel(MIMES) {
+  return function(type) {
+    return MIMES[type] ? MIMES[type].label : 'Open';
+  };
+}
 	
-	function mediaIconClass(MIMES) {
-		return function(type) {
-			return MIMES[type] ? MIMES[type].class : 'fa-external-link';
-		};
-	}
+function mediaIconClass(MIMES) {
+  return function(type) {
+    return MIMES[type] ? MIMES[type].class : 'fa-external-link';
+  };
+}
+  
+function mediaOpenClass(MIMES) {
+  return function(type) {
+    return (MIMES[type] && MIMES[type].openClass )? MIMES[type].openClass : 'fa-eye';
+  };
+}
 })();
 (function() {
 	'use strict';
@@ -721,6 +826,41 @@ angular
 
       return d.promise;
     }
+  }
+})();
+(function() {
+  'use strict';
+  
+  meuAuthentication.$inject = ["$http", "$rootScope", "$timeout"];
+  angular
+  .module('ngMeumobi.Utils.authentication', [])
+  .factory('meuAuthentication', meuAuthentication);
+  
+  /*
+  Inspired by Jason Watmore Blog Post
+  http://jasonwatmore.com/post/2014/05/26/angularjs-basic-http-authentication-example
+  */
+
+  function meuAuthentication($http, $rootScope, $timeout) {
+    
+    var service = {};
+    service.SetCredentials = function (data) { 
+      /*
+      *  data.visitor && data.token
+      */
+      $rootScope.auth = data;
+
+      $http.defaults.headers.common['X-Visitor-Token'] = data.token;
+      localStorage.globals = angular.toJson($rootScope.auth);
+    };
+
+    service.ClearCredentials = function () {
+      $rootScope.auth = {};
+      localStorage.removeItem('auth');
+      delete $http.defaults.headers.common['X-Visitor-Token'];
+    };
+
+    return service;
   }
 })();
 (function() {
@@ -941,11 +1081,13 @@ angular
     //'ngMeumobi.Utils.api',
     'ngMeumobi.Utils.loading',
     //'ngMeumobi.Utils.connection',
+    'ngMeumobi.Utils.phoneCall',
     'ngMeumobi.Utils.calendar',
     'ngMeumobi.Utils.analytics',
     'ngMeumobi.Utils.socialSharing',
     'ngMeumobi.Utils.dialogs',
-    'ngMeumobi.Utils.files'
+    'ngMeumobi.Utils.files',
+    'ngMeumobi.Utils.authentication'
     //'ngMeumobi.Utils.filters'
   ]);
   

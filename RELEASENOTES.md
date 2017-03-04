@@ -15,6 +15,11 @@ Use Resume of Changes from previous command on commit message
 1. $ git tag v2.6.4
 2. $ git push origin v2.6.4 
 
+<a name="v0.0.2"></a>
+# [v0.0.2](https://github.com/meumobi/ng-meumobi-utils/compare/v0.0.1...v0.0.2)
+
+* FEATURES: Add push Services for onesignal and pushwoosh providers
+
 <a name="v0.0.1"></a>
 # [v0.0.1](https://github.com/meumobi/ng-meumobi-utils/compare/v0.0.0...v0.0.1)
 

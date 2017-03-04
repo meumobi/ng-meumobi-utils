@@ -17,7 +17,8 @@
     'ngMeumobi.Utils.socialSharing',
     'ngMeumobi.Utils.dialogs',
     'ngMeumobi.Utils.files',
-    'ngMeumobi.Utils.authentication'
+    'ngMeumobi.Utils.authentication',
+    'ngMeumobi.Utils.push'
     //'ngMeumobi.Utils.filters'
   ]);
   

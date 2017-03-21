@@ -55,16 +55,19 @@ gulp.task('build', function () {
   https://www.npmjs.com/package/gulp-eslint
   https://glebbahmutov.com/blog/1-2-3-linted/
   $ npm install gulp-eslint eslint-plugin-angular eslint-config-angular
+https://github.com/Gillespie59/eslint-plugin-angular
 */
 gulp.task('eslint', function() {
-	return gulp.src('./src/lib/*.js')
-	.pipe($.eslint({
+  return gulp.src('./src/lib/*.js')
+  .pipe($.eslint({
     'rules':{
-            'quotes': [1, 'single'],
-            'semi': [1, 'always']
-        }
-	}))
-	.pipe($.eslint.format())
+      'quotes': [1, 'single'],
+      'semi': [1, 'always'],
+      'angular/deferred': [1, 'always'],
+      //'angular/definedundefined': [0, 'always']
+    }
+  }))
+  .pipe($.eslint.format())
   .pipe($.eslint.failAfterError());
 });
 

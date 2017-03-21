@@ -18,7 +18,7 @@
     .catch(function(error) {});
   */
 		
-	function phoneCallCordova($log, $window) {
+	function phoneCallCordova($log, $window, $q) {
     
     var service = {};
     
@@ -32,7 +32,7 @@
         bypassAppChooser = false;
       }
       
-      return new Promise(function (resolve, reject) {
+      return $q(function (resolve, reject) {
         
         var cb_callNumber = {
           success: function(result) {
@@ -55,7 +55,7 @@
     }
 	}
   
-	function phoneCall($log, $window) {
+	function phoneCall($log, $window, $q) {
     
     var service = {};
     
@@ -69,23 +69,19 @@
         bypassAppChooser = false;
       }
       
-      return new Promise(function (resolve, reject) {
-        try {
-          var passedNumber = encodeURIComponent(number);
-          $window.location = 'tel:' + passedNumber;
-          resolve();
-        } catch (e) {
-          $log.debug('phoneCall catch');
-          $log.debug(e);
-          reject(e);
-        }
+      return $q(function (resolve, reject) {
+        var passedNumber = encodeURIComponent(number);
+        $window.location = 'tel:' + passedNumber;
+        resolve();
       });
     }
 	}
   
 	function meuPhoneCall($injector, $window) {
 
-		if ($window.cordova) {
+    var CallNumber = $window.plugins && $window.plugins.CallNumber;
+    
+		if ($window.cordova && CallNumber) {
 			return $injector.get('phoneCallCordova');
 		} else {
 		  return $injector.get('phoneCall');

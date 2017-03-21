@@ -7,7 +7,6 @@
   'use strict';
 
   angular.module('ngMeumobi.Utils', [
-    //'ngMeumobi.Utils.files',
     //'ngMeumobi.Utils.api',
     'ngMeumobi.Utils.loading',
     //'ngMeumobi.Utils.connection',
@@ -17,9 +16,9 @@
     'ngMeumobi.Utils.socialSharing',
     'ngMeumobi.Utils.dialogs',
     'ngMeumobi.Utils.files',
+    'ngMeumobi.Utils.device',
     'ngMeumobi.Utils.authentication',
     'ngMeumobi.Utils.push'
-    //'ngMeumobi.Utils.filters'
   ]);
   
 })();

@@ -15,6 +15,13 @@ Use Resume of Changes from previous command on commit message
 1. $ git tag v2.6.4
 2. $ git push origin v2.6.4 
 
+<a name="v0.0.3"></a>
+# [v0.0.3](https://github.com/meumobi/ng-meumobi-utils/compare/v0.0.2...v0.0.3)
+
+* FEATURE: Closes #10, add Device Service
+* ENHANCE: Only use plugin to phoneCall if exists
+* TOOLS: update eslint rules
+
 <a name="v0.0.2"></a>
 # [v0.0.2](https://github.com/meumobi/ng-meumobi-utils/compare/v0.0.1...v0.0.2)
 

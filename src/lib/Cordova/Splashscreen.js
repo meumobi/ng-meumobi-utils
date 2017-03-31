@@ -22,6 +22,7 @@
           try {
             if ($window.navigator.splashscreen) {
               $window.navigator.splashscreen.show();
+              resolve();
             }
           } catch (e) {
             $exceptionHandler(e);
@@ -35,6 +36,7 @@
           try {
             if ($window.navigator.splashscreen) {
               $window.navigator.splashscreen.hide();
+              resolve();
             }
           } catch (e) {
             $exceptionHandler(e);

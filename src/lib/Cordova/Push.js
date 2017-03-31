@@ -83,12 +83,14 @@
     https://documentation.onesignal.com/docs/phonegap-sdk
   */
   
-	function OneSignalImpl($log, $window, $exceptionHandler, $rootScope) {
+	function OneSignalImpl($log, $window, $exceptionHandler, $rootScope, $q) {
 
     var service = {};
     
     service.config = config;
     service.register = register;
+    service.sendTag = sendTag;
+    service.setSubscription = setSubscription;
     
     return service;
     
@@ -110,6 +112,40 @@
    *
    * @param {string} provider name {'pushwoosh', 'onesignal'}.
    */
+    
+    function sendTag(key, value) {
+      return $q(function(resolve, reject) {
+        try {
+          var pushNotification = $window.plugins && $window.plugins.OneSignal;
+          
+          if (pushNotification) {
+            pushNotification.sendTag(key, value);
+          } else {
+            throw new Error('Missing Plugin: onesignal-cordova-plugin');
+          }
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
+    }
+    
+    function setSubscription(bool) {
+      return $q(function(resolve, reject) {
+        try {
+          var pushNotification = $window.plugins && $window.plugins.OneSignal;
+          
+          if (pushNotification) {
+            pushNotification.setSubscription(bool);
+          } else {
+            throw new Error('Missing Plugin: onesignal-cordova-plugin');
+          }
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
+    }
     
     function register(success, error) {
       try {

@@ -208,8 +208,9 @@
       try {
         /*
           If config.domain is null then use domain empty
+        config.domain !== null && config.domain != undefined
         */
-        var domain = config.domain !== null ? config.domain : '';
+        var domain = (config.domain) ? config.domain : '';
         
         return config.apiUrl + domain + endp; 
       } catch (e) {

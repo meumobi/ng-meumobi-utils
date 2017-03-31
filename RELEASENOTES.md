@@ -15,6 +15,13 @@ Use Resume of Changes from previous command on commit message
 1. $ git tag v2.6.4
 2. $ git push origin v2.6.4 
 
+<a name="v0.0.4"></a>
+# [v0.0.4](https://github.com/meumobi/ng-meumobi-utils/compare/v0.0.3...v0.0.4)
+
+* FEATURE: Add Cordova SplashScreen and SpinnerDialog Support
+* FEATURE: Add lib to connect to meumobi API meuCloud.API
+* ENHANCE: Re-organize libs Cordova, Utils, Cloud
+
 <a name="v0.0.3"></a>
 # [v0.0.3](https://github.com/meumobi/ng-meumobi-utils/compare/v0.0.2...v0.0.3)
 

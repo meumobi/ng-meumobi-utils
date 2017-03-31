@@ -15,6 +15,12 @@ Use Resume of Changes from previous command on commit message
 1. $ git tag v2.6.4
 2. $ git push origin v2.6.4 
 
+<a name="v0.0.5"></a>
+# [v0.0.5](https://github.com/meumobi/ng-meumobi-utils/compare/v0.0.4...v0.0.5)
+
+* ENHANCE: Add new methode for push, sendTag and setSubscription
+* UPGRADE: Closes #9, google-analytics-plugin upgrade
+
 <a name="v0.0.4"></a>
 # [v0.0.4](https://github.com/meumobi/ng-meumobi-utils/compare/v0.0.3...v0.0.4)
 

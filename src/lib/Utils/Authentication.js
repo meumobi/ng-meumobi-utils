@@ -3,14 +3,14 @@
   
   angular
   .module('ngMeumobi.Utils.authentication', [])
-  .factory('meuAuthentication', meuAuthentication);
+  .factory('meuAuthentication', authentication);
   
   /*
   Inspired by Jason Watmore Blog Post
   http://jasonwatmore.com/post/2014/05/26/angularjs-basic-http-authentication-example
   */
 
-  function meuAuthentication($http, $rootScope, $timeout) {
+  function authentication($http, $rootScope, $timeout) {
     
     var service = {};
     service.SetCredentials = function (data) { 

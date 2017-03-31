@@ -2,11 +2,11 @@
 	'use strict';
   
 	angular
-	.module('ngMeumobi.Utils.analytics', [])
+	.module('ngMeumobi.Cordova.analytics', [])
 	.factory('googleAnalyticsCordova', googleAnalyticsCordova)
 	.factory('googleAnalytics', googleAnalytics)
   .factory('$cordovaGoogleAnalytics', $cordovaGoogleAnalytics)
-	.factory('meuAnalytics', meuAnalytics);
+	.factory('meuAnalytics', analytics);
   
   /*
     Inspired by ngCordova
@@ -158,7 +158,7 @@
     }
 	}
   
-	function meuAnalytics($injector, $window) {
+	function analytics($injector, $window) {
 
 		if ($window.cordova) {
 			return $injector.get('googleAnalyticsCordova');

@@ -1,8 +1,28 @@
 For better UX, prevent loading news at each visit to /items/list #153
 "bowerize" meumobi-api #16
 Replace httpwithfallback by angular-http-tag #230
-replace ng-switch by itemHeadline directive #227
 replace services by ng-meumobi-utils bower package #214
+
+
+
+=== 24/03
+- replace ng-switch by itemHeadline directive #227
+- /visitors/forgot_password should look on db corresponding email and send mail to contact/admin, if several sites...
+- add about page (controller, link on menu)
+- if logout should unsubscribe push infomobi#108
+- if timeout not fired on login
+- On login page contacts are unexpectedly loaded
+- scroll vertical is bad, try disabling swipe
+
+ok - "TypeError: Cannot read property 'startTrackerWithId' of undefined" only on launch, first seconds => encapsulate on deviceReady
+ok - bad device infos => rename device function cdvDevice
+ok - bad theme loaded when logout and login on another account
+ok - check meuCordovaDialogs, download (toast download finished) and delete files (confirm 'you want to remove ?')
+ok - if logout and go to welcome, display logo of previously logged site
+ok - statusbar.setOptions ?? NO
+ok - Translation for Downloading doesnt exist
+
+
 
 MeuMobi.downloads.directory
 

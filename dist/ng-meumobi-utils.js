@@ -1,15 +1,486 @@
 (function() {
+  'use strict';
+  
+  angular
+  .module('ngMeumobi.Utils.localStorage', [])
+  .factory('meuLocalStorage', localStorage);
+  
+  function localStorage() {
+    
+    var service = {};
+    
+    service.getObject = getObject;
+    service.setObject = setObject;
+    service.removeObject = removeObject;
+    service.contains = contains;
+    
+    return service;
+    
+    function getObject(key) {
+      return angular.fromJson(localStorage.getItem(key));
+    };
+
+    function setObject(key, value) {
+      localStorage.setItem(key, angular.toJson(value));
+    };
+
+    function removeObject(key) {
+      localStorage.removeItem(key);
+    };
+
+    function contains(key) {
+      return localStorage.getItem(key) ? true : false;
+    };
+  }
+})();
+(function() {
+  'use strict';
+
+  httpWithFallback.$inject = ["$q", "$log", "$exceptionHandler", "$http"];
+  angular
+  .module('ngMeumobi.Utils.httpWithFallback', [])
+  .factory('meuHttpWithFallback', httpWithFallback);
+  
+  function httpWithFallback($q, $log, $exceptionHandler, $http) {
+
+    // Constructor function, using $http as prototype
+    function HttpWithFallback() { }
+    HttpWithFallback.prototype = $http;
+    HttpWithFallback.prototype.constructor = HttpWithFallback;
+
+    var httpWithFallback = new HttpWithFallback();
+
+    var prepareStoredResponse = function(storedResponse) {
+      // Data was successfully retrieved from local storage, resolve with status 200
+      storedResponse = angular.fromJson(storedResponse);
+      var headers = storedResponse.headers;
+      storedResponse.headers = function() { return headers; };
+      return storedResponse;
+    };
+
+    var makeRequest = function(url, config, deferred) {
+      $http.get(url, config)
+      .then(
+        function(response) {
+          $log.debug('[httpWithFallback]: then response success status:' + response.status);
+          // Store in local storage when status === 200
+          if (!response.config.dontStoreFallback && response.status === 200) {
+            localStorage.setItem(url, angular.toJson({
+              data: response.data,
+              status: response.status,
+              config: response.config,
+              headers: response.headers(),
+              isFallback: true
+            }));
+          }
+          // Resolve with original response
+          if (response.headers('etag') === response.config['If-None-Match'])
+            response.unchanged = true;
+          deferred.resolve(response);
+        },
+        function(response) {
+          $log.debug('[httpWithFallback]: then response fail status:' + response.status);
+          // Try to retrieve from local storage
+          var storedResponse = localStorage.getItem(url);
+          if (storedResponse) {
+            return deferred.resolve(prepareStoredResponse(storedResponse));
+          }
+
+          // Try config.fallback
+          if (response.config.fallback) {
+            return deferred.resolve({
+              data: config.fallback,
+              status: response.status,
+              headers: response.headers,
+              config: response.config,
+              isFallback: true
+            });
+          }
+
+          // Reject with original error response
+          return deferred.reject(response);
+        }
+      );
+
+      // Decorate promise with success and error functions to be compatible with the promise returned by $http.get
+      var promise = deferred.promise;
+
+      promise.success = function(fn) {
+        promise.then(function(response) {
+          fn(response.data, response.status, response.headers, config, response.isFallback);
+        });
+        return promise;
+      };
+
+      promise.error = function(fn) {
+        promise.then(null, function(response) {
+          fn(response.data, response.status, response.headers, config);
+        });
+        return promise;
+      };
+
+      return promise;
+    };
+    /**
+    * Override $http.get to catch the promise.error
+    */
+    httpWithFallback.get = function(url, config) {
+      // Client doesn't support local storage
+      if (!localStorage) {
+        // If no fallback defined, just just $http.get
+        if (!config.fallback) {
+          return $http.get(url, config);
+        }
+        // Local storage won't be used
+        config.dontStoreFallback = true;
+      }
+
+      // Delegate get to $http
+      var deferred = $q.defer();
+      var storedResponse = localStorage.getItem(url);
+
+      if (storedResponse) {
+        //second promise to update data after request
+        var deferredRequest = $q.defer();
+        storedResponse = prepareStoredResponse(storedResponse);
+        var cache = storedResponse;          
+        // If config is undefined, ie httpWithFallback.get(PATH)
+        // config = typeof config !== 'undefined' ? config : {};
+        config = angular.isDefined(config) ? config : {};         
+        if (cache && cache.headers())
+          config['If-None-Match'] = cache.headers().etag;
+        storedResponse.promise = makeRequest(url, config, deferredRequest);
+        deferred.resolve(storedResponse);
+        return deferred.promise;
+      }
+      //don't have local, continue to request
+      return makeRequest(url, config, deferred);
+    };
+
+    return httpWithFallback;
+  };
+})();
+(function() {
+	'use strict';
+
+	loadingInterceptor.$inject = ["$q", "$rootScope", "$log"];
+  errorInterceptor.$inject = ["$q", "$rootScope", "$log"];
+	angular
+	.module('ngMeumobi.Utils.httpInterceptors', [])
+	.factory('meuLoadingInterceptor', loadingInterceptor)
+  .factory('meuErrorInterceptor', errorInterceptor);
+	
+	function loadingInterceptor($q, $rootScope, $log) {
+		
+		var numLoadings = 0;
+		
+		return {
+			request: function(config) {
+        if (!numLoadings++) {
+          $rootScope.$broadcast('loading:start');
+        }
+
+				return config || $q.when(config);
+			},
+			response: function(response) {
+				if (!(--numLoadings)) {
+					$rootScope.$broadcast('loading:stop');
+				}
+
+				return response || $q.when(response);
+			},
+			requestError: function(request) {
+				if (!(--numLoadings)) {
+					$rootScope.$broadcast('loading:stop');
+				}
+
+				return $q.reject(request);
+			},
+			responseError: function(response) {
+				if (!(--numLoadings)) {
+					$rootScope.$broadcast('loading:stop');
+				}
+				
+				return $q.reject(response);
+			}
+		};
+	}
+  
+  function errorInterceptor($q, $rootScope, $log) {
+    
+  	return {
+  		request: function(config) {
+        
+  			return config || $q.when(config);
+  		},
+  		requestError: function(request) {
+        
+  			return $q.reject(request);
+  		},
+  		response: function(response) {
+        
+  			return response || $q.when(response);
+  		},
+  		responseError: function(response) {
+  			$log.debug('[API:errorInterceptor]: BEGIN');
+        $log.debug('Response Status: ' + response.status);
+  			$log.debug(response);
+  			$log.debug('[API:errorInterceptor]: END');
+  			if (response && response.status === 0) {} // network offline or CORS error
+  			if (response && response.status === 404) {}
+  			if (response && response.status === 401) {
+          $rootScope.$broadcast('error:401');
+  			}
+  			if (response && response.status === 408) {} // Server timed out waiting for the request.
+  			if (response && response.status >= 500) {}
+        
+  			return $q.reject(response);
+  		}
+  	};
+  }
+})();
+(function() {
+	'use strict';
+  
+	deviceReady.$inject = ["$log", "$window"];
+	angular
+	.module('ngMeumobi.Utils.deviceReady', [])
+	.factory('meuDeviceReady', deviceReady);
+  
+  /*
+  
+    How to use it: 
+      meuDeviceReady(function() {
+        ...
+      });
+  */
+  
+	function deviceReady($log, $window) {
+		return function(done) {
+			if (angular.isObject($window.cordova)) {
+        /*eslint-disable angular/document-service */
+        document.addEventListener('deviceready', function(event) {
+					done();
+				}, false);
+        /*eslint-enable angular/document-service */
+			} else {
+				done();
+			}
+		};
+	}
+})();
+(function() {
+  'use strict';
+  
+  authentication.$inject = ["$http", "$rootScope", "$timeout"];
+  angular
+  .module('ngMeumobi.Utils.authentication', [])
+  .factory('meuAuthentication', authentication);
+  
+  /*
+  Inspired by Jason Watmore Blog Post
+  http://jasonwatmore.com/post/2014/05/26/angularjs-basic-http-authentication-example
+  */
+
+  function authentication($http, $rootScope, $timeout) {
+    
+    var service = {};
+    service.SetCredentials = function (data) { 
+      /*
+      *  data.visitor && data.token
+      */
+      $rootScope.auth = data;
+
+      $http.defaults.headers.common['X-Visitor-Token'] = data.token;
+      localStorage.globals = angular.toJson($rootScope.auth);
+    };
+
+    service.ClearCredentials = function () {
+      $rootScope.auth = {};
+      localStorage.removeItem('auth');
+      delete $http.defaults.headers.common['X-Visitor-Token'];
+    };
+
+    return service;
+  }
+})();
+(function() {
+  'use strict';
+
+  statusbar.$inject = ["$q", "$window", "$log", "$exceptionHandler"];
+  angular
+  .module('ngMeumobi.Utils.statusbar', [])
+  .factory('meuStatusbar', statusbar);
+  
+  /*
+  install   :     cordova plugin add cordova-plugin-statusbar
+  
+  How to use it: 
+    meuCordova.statusbar.call()
+    .then(function(result) {})
+    .catch(function(error) {});
+  */
+  
+  function statusbar($q, $window, $log, $exceptionHandler) {
+    
+    var service = {};
+    var options = {};
+    
+    service.setOption = setOption;
+    service.setOptions = setOptions;
+    service.call = call;
+    
+    return service;
+
+    function setOptions(opt) {
+      angular.extend(options, opt);
+    }
+
+    function setOption(name, value) {
+      options[name] = value;
+    }
+    
+    function call() {
+      return $q(function(resolve, reject) {
+        try {
+          
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
+    }
+  }
+})();
+(function() {
+  'use strict';
+
+  splashscreen.$inject = ["$q", "$window", "$log", "$exceptionHandler"];
+  angular
+  .module('ngMeumobi.Cordova.splashscreen', [])
+  .factory('meuSplashscreen', splashscreen);
+  
+  /*
+  install   :     cordova plugin add cordova-plugin-splashscreen
+  
+  How to use it: 
+  meuCordova.splashscreen.hide()
+  .then(function() {})
+  .catch(function() {});
+  */
+  
+  function splashscreen($q, $window, $log, $exceptionHandler) {
+    
+    return {
+      show: function() {
+        return $q(function(resolve, reject) {
+          try {
+            if ($window.navigator.splashscreen) {
+              $window.navigator.splashscreen.show();
+            }
+          } catch (e) {
+            $exceptionHandler(e);
+            reject(e);
+          };
+        });
+      },
+    
+      hide: function() {
+        return $q(function(resolve, reject) {
+          try {
+            if ($window.navigator.splashscreen) {
+              $window.navigator.splashscreen.hide();
+            }
+          } catch (e) {
+            $exceptionHandler(e);
+            reject(e);
+          };
+        });
+      }
+    };
+  }
+})();
+(function() {
+  'use strict';
+
+  spinnerDialog.$inject = ["$q", "$window", "$log", "$exceptionHandler"];
+  angular
+  .module('ngMeumobi.Cordova.spinnerDialog', [])
+  .factory('meuSpinnerDialog', spinnerDialog);
+  
+  /*
+  install   :     cordova plugin add cordova-plugin-spinnerdialog
+  
+  How to use it: 
+    meuSpinnerDialog.show()
+    .then(function(result) {})
+    .catch(function(error) {});
+  */
+  
+  function spinnerDialog($q, $window, $log, $exceptionHandler) {
+    
+    var service = {};
+    
+    service.show = show;
+    service.hide = hide;
+    
+    return service;
+
+    function show() {
+      return $q(function(resolve, reject) {
+        try {
+          var spinner = $window.plugins && $window.plugins.spinnerDialog;
+        
+          if (spinner) {
+            spinner.show();
+            resolve();
+          } else {
+            throw new Error('[PLUGIN MISSING]: cordova-plugin-spinnerdialog');
+          }      
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        }
+      });
+    };
+    
+    function hide() {
+      return $q(function(resolve, reject) {
+        try {
+          var spinner = $window.plugins && $window.plugins.spinnerDialog;
+        
+          if (spinner) {
+            spinner.hide();
+          } else {
+            throw new Error('[PLUGIN MISSING]: cordova-plugin-spinnerdialog');
+          }      
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        }
+      });
+    };
+  }
+})();
+(function() {
 	'use strict';
 
 	angular
-	.module('ngMeumobi.Utils.socialSharing', [])
-	.factory('meuSocialSharing', ['$q', '$window', 'striptagsFilter', 'br2nlFilter', '$log', meuSocialSharing]);
+	.module('ngMeumobi.Cordova.socialSharing', [])
+	.factory('meuSocialSharing', ['$q', '$window', 'striptagsFilter', 'br2nlFilter', '$log', socialSharing]);
   
   /*
     cordova plugin add https://github.com/EddyVerbruggen/SocialSharing-PhoneGap-Plugin
+  
+  How to use it: 
+    meuSocialSharing.shareItem()
+    .then(function(result) {})
+    .catch(function(error) {});
+  
+    meuSocialSharing.shareMedia()
   */
   
-  function meuSocialSharing($q, $window, striptags, br2nl, $log) {
+  function socialSharing($q, $window, striptags, br2nl, $log, $exceptionHandler) {
     
     var service = {};
     var options = {
@@ -26,7 +497,7 @@
     return service;
 
     function setOptions(options) {
-      angular.extend(options, options);
+      angular.extend(options, opt);
     }
 
     function setOption(name, value) {
@@ -88,35 +559,37 @@
         chooserTitle: 'Pick an app' // Android only, you can override the default share sheet title
       }
     */
-      var d = $q.defer();			
-      var social = $window.plugins && $window.plugins.socialsharing;
-      
-      // If params.description is null
-    
-			if (social) {
-        if (options.postfix) {
-  				params.subject += options.postfix;
-        }
-      
-        params.message = params.message && striptags(br2nl(params.message));
-        params.subject = params.subject && striptags(br2nl(params.subject));
+      return $q(function(resolve, reject) {
+        
         var cb_share = {
           success: function(result) {
-            d.resolve(result);
+            resolve(result);
           },
           fail: function(msg) {
-            d.reject(msg);
+            throw new Error('[CALLBACK FAILURE]: social.shareWithOptions');
           }  
         };
         
-        $log.debug('shareWithOptions');
-        $log.debug(params);
-        social.shareWithOptions(params, cb_share.success, cb_share.fail); 
-			} else {
-			  d.reject('Plugin socialsharing missing');
-			}
+        try {
+          var social = $window.plugins && $window.plugins.socialsharing;
+    
+    			if (social) {
+            if (options.postfix) {
+      				params.subject += options.postfix;
+            }
       
-      return d.promise;
+            params.message = params.message && striptags(br2nl(params.message));
+            params.subject = params.subject && striptags(br2nl(params.subject));
+
+            social.shareWithOptions(params, cb_share.success, cb_share.fail); 
+    			} else {
+    			  throw new Error('[PLUGIN MISSING]: cordova-plugin-x-socialsharing');
+    			}          
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
 		}
   }
 })();
@@ -126,8 +599,7 @@
   initPushwoosh.$inject = ["$log", "$window", "$document", "$exceptionHandler"];
 	OneSignalImpl.$inject = ["$log", "$window", "$exceptionHandler", "$rootScope"];
 	angular
-	.module('ngMeumobi.Utils.push', [])
-	
+	.module('ngMeumobi.Cordova.push', [])
 	.factory('pushwoosh', initPushwoosh)
 	.factory('onesignal', OneSignalImpl);
   
@@ -281,144 +753,6 @@
     };
 	}
 })();
-(function() {
-	'use strict';
-  
-	phoneCallCordova.$inject = ["$log", "$window", "$q"];
-	phoneCall.$inject = ["$log", "$window", "$q"];
-	meuPhoneCall.$inject = ["$injector", "$window"];
-	angular
-	.module('ngMeumobi.Utils.phoneCall', [])
-	.factory('phoneCallCordova', phoneCallCordova)
-	.factory('phoneCall', phoneCall)
-	.factory('meuPhoneCall', meuPhoneCall);
-  
-  /*
-    install   :     cordova plugin add https://github.com/Rohfosho/CordovaCallNumberPlugin.git
-  
-    npm install https://www.npmjs.com/package/call-number
-  
-    How to use it: 
-    meuPhoneCall(number, true)
-    .then(function(result) {})
-    .catch(function(error) {});
-  */
-		
-	function phoneCallCordova($log, $window, $q) {
-    
-    var service = {};
-    
-    service.call = call;
-    
-    return service;
-    
-    function call(number, bypassAppChooser) {
-      
-      if (angular.isUndefined(bypassAppChooser)) {
-        bypassAppChooser = false;
-      }
-      
-      return $q(function (resolve, reject) {
-        
-        var cb_callNumber = {
-          success: function(result) {
-            resolve(result);
-          },
-          fail: function(result) {
-            $log.debug(result);
-            reject(result);
-          }
-        };
-        
-				var CallNumber = $window.plugins && $window.plugins.CallNumber;
-        
-        if (CallNumber) {
-          CallNumber.callNumber(cb_callNumber.success, cb_callNumber.fail, number, bypassAppChooser);
-        } else {
-          throw new Error('Missing CordovaCallNumber Plugin');
-        }       
-      });
-    }
-	}
-  
-	function phoneCall($log, $window, $q) {
-    
-    var service = {};
-    
-    service.call = call;
-    
-    return service;
-    
-    function call(number, bypassAppChooser) {
-      
-      if (angular.isUndefined(bypassAppChooser)) {
-        bypassAppChooser = false;
-      }
-      
-      return $q(function (resolve, reject) {
-        var passedNumber = encodeURIComponent(number);
-        $window.location = 'tel:' + passedNumber;
-        resolve();
-      });
-    }
-	}
-  
-	function meuPhoneCall($injector, $window) {
-
-    var CallNumber = $window.plugins && $window.plugins.CallNumber;
-    
-		if ($window.cordova && CallNumber) {
-			return $injector.get('phoneCallCordova');
-		} else {
-		  return $injector.get('phoneCall');
-		}
-	}
-})();
-(function() {
-	'use strict';
-
-	loadingInterceptor.$inject = ["$q", "$rootScope", "$log"];
-	angular
-	.module('ngMeumobi.Utils.loading', [])
-	.factory('loadingInterceptor', loadingInterceptor);
-	
-	function loadingInterceptor($q, $rootScope, $log) {
-		
-		var numLoadings = 0;
-		
-		return {
-			request: function(config) {
-        if (!numLoadings++) {
-          $rootScope.$broadcast('loading:start');
-        }
-
-				return config || $q.when(config);
-			},
-			response: function(response) {
-				if (!(--numLoadings)) {
-					$rootScope.$broadcast('loading:stop');
-				}
-
-				return response || $q.when(response);
-			},
-			requestError: function(request) {
-				if (!(--numLoadings)) {
-					$rootScope.$broadcast('loading:stop');
-				}
-
-				return $q.reject(request);
-			},
-			responseError: function(response) {
-				if (!(--numLoadings)) {
-					$rootScope.$broadcast('loading:stop');
-				}
-				
-				return $q.reject(response);
-			}
-		};
-	}
-})();
-
 (function () {
   'use strict';
   
@@ -426,7 +760,7 @@ mediaClickLabel.$inject = ["MIMES"];
 mediaIconClass.$inject = ["MIMES"];
 mediaOpenClass.$inject = ["MIMES"];
   angular
-  .module('ngMeumobi.Utils.files', ['slugifier'])
+  .module('ngMeumobi.Cordova.files', ['slugifier'])
   .constant('MIMES', {
     'application/pdf': {
       class: 'fa-file-pdf-o',
@@ -476,9 +810,9 @@ mediaOpenClass.$inject = ["MIMES"];
   .filter('mediaClickLabel', mediaClickLabel)
   .filter('mediaIconClass', mediaIconClass)
   .filter('mediaOpenClass', mediaOpenClass) 
-  .provider('meuFiles', meuFiles); 
+  .provider('meuFiles', files); 
         
-  function meuFiles() {
+  function files() {
     var fileTransfers = {};
     var files = {};
     var options = {
@@ -491,7 +825,7 @@ mediaOpenClass.$inject = ["MIMES"];
     };
     
     this.setOptions = function(options) {
-      angular.extend(options, options);
+      angular.extend(options, opt);
     };
 
     this.setOption = function(name, value) {
@@ -866,10 +1200,10 @@ function mediaOpenClass(MIMES) {
 (function() {
 	'use strict';
 
-  meuDialogs.$inject = ["$q", "$window"];
+  dialogs.$inject = ["$q", "$window", "$exceptionHandler"];
 	angular
-	.module('ngMeumobi.Utils.dialogs', [])
-	.factory('meuDialogs', meuDialogs);
+	.module('ngMeumobi.Cordova.dialogs', [])
+	.factory('meuDialogs', dialogs);
   
   /*
     install   :     cordova plugin add cordova-plugin-dialogs nl.x-services.plugins.toast
@@ -877,7 +1211,7 @@ function mediaOpenClass(MIMES) {
     link      :     https://github.com/EddyVerbruggen/Toast-PhoneGap-Plugin  
   */
   
-  function meuDialogs($q, $window) {
+  function dialogs($q, $window, $exceptionHandler) {
     
     var service = {};
     
@@ -887,7 +1221,7 @@ function mediaOpenClass(MIMES) {
     
     return service;
     
-    function alert (message, title, buttonName) {
+    function alert(message, title, buttonName) {
       var q = $q.defer();
 
       if (!$window.navigator.notification) {
@@ -902,49 +1236,62 @@ function mediaOpenClass(MIMES) {
       return q.promise;
     };
     
-    function confirm (message, title, buttonLabels) {
-      var q = $q.defer();
+    /*
+      
+      buttonLabels: Array of strings specifying button labels. (Array) (Optional, defaults to [OK,Cancel])
+    */
+    function confirm(message, title, buttonLabels) {
+      return $q(function(resolve, reject) {
+        try {
+          title = (angular.isDefined(title)) ? title : 'Confirm';
 
-      if (!$window.navigator.notification) {
-        if ($window.confirm(message)) {
-          q.resolve(1);
-        } else {
-          q.resolve(2);
-        }
-      } else {
-        navigator.notification.confirm(message, function (buttonIndex) {
-          q.resolve(buttonIndex);
-        }, title, buttonLabels);
-      }
-
-      return q.promise;
+          if (!$window.navigator.notification) {
+            if ($window.confirm(message)) {
+              resolve(1);
+            } else {
+              resolve(2);
+            }
+          } else {
+            navigator.notification.confirm(message, function (buttonIndex) {
+              resolve(buttonIndex);
+            }, title, buttonLabels);
+          }
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
     };
     
-    function toast (message) {
-      var q = $q.defer();
-			var toast = $window.plugins && $window.plugins.toast;
+    function toast(message) {
+      return $q(function(resolve, reject) {
+        try {
+    			var toast = $window.plugins && $window.plugins.toast;
       
-			if (toast) {
-        toast.showLongBottom(message, function (response) {
-          q.resolve(response);
-        }, function (error) {
-          q.reject(error);
-        });
-      } else {
-        alert(message);
-      }
-      
-      return q.promise;
+    			if (toast) {
+            toast.showLongBottom(message, function (response) {
+              resolve(response);
+            }, function (error) {
+              reject(error);
+            });
+          } else {
+            alert(message);
+          }          
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
     };
   }
 })();
 (function() {
 	'use strict';
   
-	meuDevice.$inject = ["$log", "$window", "$q", "$exceptionHandler"];
+	cdvDevice.$inject = ["$log", "$window", "$q", "$exceptionHandler"];
 	angular
-	.module('ngMeumobi.Utils.device', [])
-	.factory('meuDevice', meuDevice);
+	.module('ngMeumobi.Cordova.device', [])
+	.factory('meuDevice', cdvDevice);
   
   /*
     npm install: 
@@ -960,7 +1307,7 @@ function mediaOpenClass(MIMES) {
       .catch(function(error) {});
   */
   
-	function meuDevice($log, $window, $q, $exceptionHandler) {
+	function cdvDevice($log, $window, $q, $exceptionHandler) {
     
     var service = {};
     
@@ -1051,7 +1398,7 @@ function mediaOpenClass(MIMES) {
           
           resolve(properties);
         } catch (e) {
-          $exceptionHandler(e)
+          $exceptionHandler(e);
           reject(e);
         } 
       });
@@ -1059,18 +1406,105 @@ function mediaOpenClass(MIMES) {
 	}
 })();
 (function() {
+  'use strict';
+  
+  callNumberCordova.$inject = ["$log", "$window", "$q", "$exceptionHandler"];
+  callNumber.$inject = ["$log", "$window", "$q", "$exceptionHandler"];
+  meuCallNumber.$inject = ["$injector", "$window"];
+  angular
+  .module('ngMeumobi.Cordova.callNumber', [])
+  .factory('callNumberCordova', callNumberCordova)
+  .factory('callNumber', callNumber)
+  .factory('meuCallNumber', meuCallNumber);
+  
+  /*
+  install   :     cordova plugin add https://github.com/Rohfosho/CordovaCallNumberPlugin.git
+  
+  npm install https://www.npmjs.com/package/call-number
+  
+  How to use it: 
+  meuCordova.callNumber(number, true)
+  .then(function(result) {})
+  .catch(function(error) {});
+  */
+		
+  function callNumberCordova($log, $window, $q, $exceptionHandler) {
+    
+    return function(number, bypassAppChooser) {
+      
+      return $q(function(resolve, reject) {
+        try {
+          if (angular.isUndefined(bypassAppChooser)) {
+            bypassAppChooser = false;
+          }
+          var cb_callNumber = {
+            success: function(result) {
+              resolve(result);
+            },
+            fail: function(result) {
+              $log.debug(result);
+              reject(result);
+            }
+          };
+      
+          var CallNumber = $window.plugins && $window.plugins.CallNumber;
+      
+          if (CallNumber) {
+            CallNumber.callNumber(cb_callNumber.success, cb_callNumber.fail, number, bypassAppChooser);
+          } else {
+            throw new Error('Missing CordovaCallNumber Plugin');
+          }
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
+    };
+  }
+  
+  function callNumber($log, $window, $q, $exceptionHandler) {
+    
+    return function(number, bypassAppChooser) {
+      return $q(function(resolve, reject) {
+        try {
+          if (angular.isUndefined(bypassAppChooser)) {
+            bypassAppChooser = false;
+          }
+          var passedNumber = encodeURIComponent(number);
+          $window.location = 'tel:' + passedNumber;
+          resolve();
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
+    };
+  }
+  
+  function meuCallNumber($injector, $window) {
+
+    var CallNumber = $window.plugins && $window.plugins.CallNumber;
+    
+    if ($window.cordova && CallNumber) {
+      return $injector.get('callNumberCordova');
+    } else {
+      return $injector.get('callNumber');
+    }
+  }
+})();
+(function() {
 	'use strict';
 
 	angular
-	.module('ngMeumobi.Utils.calendar', [])
-	.factory('meuCalendar', ['$q', '$window', 'striptagsFilter', 'br2nlFilter', meuCalendar]);
+	.module('ngMeumobi.Cordova.calendar', [])
+	.factory('meuCalendar', ['$q', '$window', 'striptagsFilter', 'br2nlFilter', calendar]);
   
   /*
     cordova plugin add https://github.com/EddyVerbruggen/Calendar-PhoneGap-Plugin.git
     If start and end_date equal 00:00 then the event occurs all day long
   */
   
-  function meuCalendar($q, $window, striptags, br2nl) {
+  function calendar($q, $window, striptags, br2nl, $exceptionHandler) {
     
     var service = {};
     
@@ -1079,67 +1513,36 @@ function mediaOpenClass(MIMES) {
     return service;
     
     function createEventInteractively(options) {
-      var d = $q.defer(),
-        defaultOptions = {
-          title: null,
-          address: null,
-          description: '',
-          start_date: null,
-          end_date: null
-        };
+      var defaultOptions = {
+        title: null,
+        address: null,
+        description: '',
+        start_date: null,
+        end_date: null
+      };
 
       defaultOptions = angular.extend(defaultOptions, options);
-
-      $window.plugins.calendar.createEventInteractively(
-        striptags(defaultOptions.title),
-        striptags(defaultOptions.address),
-        striptags(br2nl(defaultOptions.description)),
-        new Date(defaultOptions.start_date  * 1000),
-        new Date(defaultOptions.end_date  * 1000),
-        function (message) {
-          d.resolve(message);
-        }, function (error) {
-          d.reject(error);
-        }
-      );
-
-      return d.promise;
+      
+      return $q(function(resolve, reject) {
+        try {
+          $window.plugins.calendar.createEventInteractively(
+            striptags(defaultOptions.title),
+            striptags(defaultOptions.address),
+            striptags(br2nl(defaultOptions.description)),
+            new Date(defaultOptions.start_date  * 1000),
+            new Date(defaultOptions.end_date  * 1000),
+            function (message) {
+              resolve(message);
+            }, function (e) {
+              reject(e);
+            }
+          );
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
     }
-  }
-})();
-(function() {
-  'use strict';
-  
-  meuAuthentication.$inject = ["$http", "$rootScope", "$timeout"];
-  angular
-  .module('ngMeumobi.Utils.authentication', [])
-  .factory('meuAuthentication', meuAuthentication);
-  
-  /*
-  Inspired by Jason Watmore Blog Post
-  http://jasonwatmore.com/post/2014/05/26/angularjs-basic-http-authentication-example
-  */
-
-  function meuAuthentication($http, $rootScope, $timeout) {
-    
-    var service = {};
-    service.SetCredentials = function (data) { 
-      /*
-      *  data.visitor && data.token
-      */
-      $rootScope.auth = data;
-
-      $http.defaults.headers.common['X-Visitor-Token'] = data.token;
-      localStorage.globals = angular.toJson($rootScope.auth);
-    };
-
-    service.ClearCredentials = function () {
-      $rootScope.auth = {};
-      localStorage.removeItem('auth');
-      delete $http.defaults.headers.common['X-Visitor-Token'];
-    };
-
-    return service;
   }
 })();
 (function() {
@@ -1148,13 +1551,13 @@ function mediaOpenClass(MIMES) {
 	googleAnalyticsCordova.$inject = ["$cordovaGoogleAnalytics", "$log"];
 	googleAnalytics.$inject = ["$log", "$q"];
   $cordovaGoogleAnalytics.$inject = ["$q", "$window", "$log"];
-	meuAnalytics.$inject = ["$injector", "$window"];
+	analytics.$inject = ["$injector", "$window"];
 	angular
-	.module('ngMeumobi.Utils.analytics', [])
+	.module('ngMeumobi.Cordova.analytics', [])
 	.factory('googleAnalyticsCordova', googleAnalyticsCordova)
 	.factory('googleAnalytics', googleAnalytics)
   .factory('$cordovaGoogleAnalytics', $cordovaGoogleAnalytics)
-	.factory('meuAnalytics', meuAnalytics);
+	.factory('meuAnalytics', analytics);
   
   /*
     Inspired by ngCordova
@@ -1306,7 +1709,7 @@ function mediaOpenClass(MIMES) {
     }
 	}
   
-	function meuAnalytics($injector, $window) {
+	function analytics($injector, $window) {
 
 		if ($window.cordova) {
 			return $injector.get('googleAnalyticsCordova');
@@ -1315,15 +1718,462 @@ function mediaOpenClass(MIMES) {
 		}
 	}
 })();
+(function(global) {
+  'use strict';
+
+  utils.$inject = ["meuLocalStorage", "meuDeviceReady", "meuLoadingInterceptor", "meuErrorInterceptor", "meuHttpWithFallback"];
+  angular
+  .module('ngMeumobi.Utils', [
+    'ngMeumobi.Utils.localStorage',
+    'ngMeumobi.Utils.deviceReady',
+    'ngMeumobi.Utils.httpInterceptors',
+    'ngMeumobi.Utils.authentication',
+    'ngMeumobi.Utils.httpWithFallback'
+  ])
+  .factory('meuUtils', utils);
+  
+  function utils(
+    meuLocalStorage,
+    meuDeviceReady,
+    meuLoadingInterceptor,
+    meuErrorInterceptor,
+    meuHttpWithFallback
+  ) {
+	
+    var service = {};
+	
+    service.localStorage = meuLocalStorage;
+    service.deviceReady = meuDeviceReady;
+    service.loadingInterceptor = meuLoadingInterceptor;
+    service.errorInterceptor = meuErrorInterceptor;
+    service.httpWithFallback = meuHttpWithFallback;
+      
+    return service;
+  }
+})(this);
+
+(function() {
+  'use strict';
+
+  cordova.$inject = ["meuAnalytics", "meuCalendar", "meuCallNumber", "meuDevice", "meuDialogs", "meuFiles", "meuSocialSharing", "meuSpinnerDialog", "meuSplashscreen"];
+  angular
+  .module('ngMeumobi.Cordova', [
+    'ngMeumobi.Cordova.analytics',
+    'ngMeumobi.Cordova.calendar',
+    'ngMeumobi.Cordova.callNumber',
+    'ngMeumobi.Cordova.device',
+    'ngMeumobi.Cordova.dialogs',
+    'ngMeumobi.Cordova.files',
+    'ngMeumobi.Cordova.socialSharing',
+    'ngMeumobi.Cordova.spinnerDialog',
+    'ngMeumobi.Cordova.splashscreen',
+    'ngMeumobi.Cordova.push'
+  ])
+  .factory('meuCordova', cordova);
+  
+  function cordova(
+    meuAnalytics, 
+    meuCalendar, 
+    meuCallNumber, 
+    meuDevice, 
+    meuDialogs,
+    meuFiles,
+    meuSocialSharing,
+    meuSpinnerDialog,
+    meuSplashscreen
+  ) {
+	
+    var service = {};
+	
+    service.analytics = meuAnalytics;
+    service.calendar = meuCalendar;
+    service.callNumber = meuCallNumber; 
+    service.device = meuDevice;
+    service.dialogs = meuDialogs;
+    service.files = meuFiles;
+    service.socialSharing = meuSocialSharing;
+    service.spinnerDialog = meuSpinnerDialog;
+    service.splashscreen = meuSplashscreen;
+      
+    return service;
+  }
+})();
+(function() {
+  'use strict';
+
+  API.$inject = ["$rootScope", "$http", "$log", "$exceptionHandler", "meuHttpWithFallback"];
+  angular
+  .module('ngMeumobi.Utils')
+  .provider('meuCloud', meuCloudProvider)
+  .factory('meuAPI', API);
+  
+  function meuCloudProvider() {
+    
+    meuCloud.$inject = ["$q", "$window", "$log", "$exceptionHandler", "meuUtils", "meuAPI"];
+    var options = {},
+        data = {};
+    
+    this.setOptions = function(opt) {
+      angular.extend(options, opt);
+    };
+
+    this.setOption = function(name, value) {
+      options[name] = value;
+    };
+    
+    this.$get = meuCloud;
+    
+    function meuCloud($q, $window, $log, $exceptionHandler, meuUtils, meuAPI) {
+    
+/*
+  Helpers
+*/
+      var Helpers = {
+        lookup: function(array) {
+          var token = 'id';
+          // Identify if it's an array of items (item._id) or category (category.id)
+          if (array[0] && array[0].hasOwnProperty('_id'))
+            token = '_id';
+          return Helpers.lookupByToken(array, token);
+        },
+        lookupByToken: function(array, token) {
+          var lookup = [];
+          for (var i = 0, len = array.length; i < len; i++) {
+              lookup[array[i][token]] = array[i];
+          }
+          return lookup;
+        },
+        isFreshResponse: function(response) {
+          var isFallback = response.hasOwnProperty('isFallback') ? response.isFallback : null;
+          var unchanged = response.hasOwnProperty('unchanged') ? response.unchanged : null;
+        
+          return !(unchanged || isFallback);
+        },
+        getCategoriesTree: function(categories) {
+          var children = [];
+          children[0] = [];
+          for(var key in categories) {
+            var parent_id = categories[key].parent_id != null ? categories[key].parent_id : 0;
+            if (!children[parent_id])
+              children[parent_id] = [];
+            children[parent_id].push(categories[key]);
+          }
+          for(var key in categories) {
+            var category = categories[key];
+            category.children = [];
+            if (children[category.id])
+              category.children = children[category.id];
+          }
+          return children[0];
+        }
+      };
+
+/****************************************************************/ 
+    
+      var service = {};
+
+      service.helpers = Helpers;
+      service.getCategory = getCategory;
+      service.syncPerformance = syncPerformance;
+      service.API = meuAPI;
+      service.init = init;
+      service.getSiteLogoUrl = getSiteLogoUrl;
+      service.getSiteProperty = getSiteProperty;
+      service.getAssetUrl = getAssetUrl;
+    
+      return service;
+    
+      /*
+        meuCloud.API.Site.performance()
+        .then(function(response) {
+          updateData(response);
+          if (response.promise)
+            return response.promise;
+        })
+        // If response contains a promise, means is from cache and promise will sync w/ Server
+        .then(function(response) {
+          updateData(response)
+        })
+        .catch(function(e) {
+          $exceptionHandler(e);
+        })
+      
+      */
+      
+      function init() {
+        if (options.hasOwnProperty('apiUrl'))
+          meuAPI.Config.setProperty('apiUrl', options.apiUrl);
+      }
+           
+      function getCategory(id) {
+        try {
+          var categories = Helpers.lookup(data.categories);
+          if (categories.hasOwnProperty(id)) {
+            return categories[id];
+          } else {
+            return null;
+          }
+        } catch (e) {
+          $exceptionHandler(e);
+        };
+      }
+  
+      function getData(property) {
+        try {
+          return data[property]; 
+        } catch (e) {
+          $exceptionHandler(e);
+          return {};
+        }
+      }
+      
+      function getSiteProperty(property) {
+        try {
+          return data.site[property]; 
+        } catch (e) {
+          $exceptionHandler(e);
+          return {};
+        }
+      }
+      
+      function getCategories() {
+        return getData('categories');
+      }
+  
+      function setCategories(categories) {
+        data.categories = categories;
+      }
+      
+      function setSite(site) {
+        data.site = site;
+      }
+      
+      function setVisitor(visitor) {
+        data.visitor = visitor;
+      }
+      
+      function getVisitor() {
+        return data.visitor;
+      }
+      
+      function getSiteLogoUrl() {
+        try {
+          return options.cdnUrl + data.site.logo; 
+        } catch (e) {
+          $exceptionHandler(e);
+          return null;
+        } 
+      }
+      
+      function getAssetUrl(path) {
+        try {
+          return options.cdnUrl + path; 
+        } catch (e) {
+          $exceptionHandler(e);
+          return null;
+        } 
+      }
+      
+      function setBusiness(business) {
+        data.business = business;
+      }
+      
+      function syncPerformance(data) {
+        return $q(function(resolve, reject) {
+          try {
+            setCategories(data.categories);
+            setSite(data.site);
+            setBusiness(data.business);
+            resolve(data);
+          } catch (e) {
+            $exceptionHandler(e);
+            reject(e);
+          };
+        });
+      }
+    }
+  }
+  
+  function API($rootScope, $http, $log, $exceptionHandler, meuHttpWithFallback) {
+  
+    var config = {};
+    
+    var convertJsonAsUriParameters = function(data) {
+      var url = Object.keys(data).map(function(k) {
+        return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]);
+      }).join('&');
+    
+      return url;
+    };
+
+    var buildUrl = function(endp) {
+      try {
+        /*
+          If config.domain is null then use domain empty
+        */
+        var domain = config.domain !== null ? config.domain : '';
+        
+        return config.apiUrl + domain + endp; 
+      } catch (e) {
+        $exceptionHandler(e);
+      }
+    };
+
+    var api = (function() {
+      return {
+        get: function(endp, config) {
+          var url = buildUrl(endp);
+      
+          return meuHttpWithFallback.get(url, config);
+        },
+        post: function(endp, obj) {
+          return $http({
+            method: 'POST',
+            url: buildUrl(endp),
+            data: angular.toJson(obj),
+            responseType: 'json',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+        },
+        put: function(endp, obj) {
+          return $http({
+            method: 'PUT',
+            url: buildUrl(endp),
+            data: angular.toJson(obj),
+            responseType: 'json',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+        },
+        del: function(endp, id) {
+          return $http({
+            method: 'DELETE',
+            url: buildUrl(endp),
+            responseType: 'json',
+          });
+        }
+      };
+    })();
+
+    var app = {
+      Categories: (function() {
+        var path = '/categories/';
+        return {
+          query: function() {
+            // TODO: Need to be tested
+            return api.get(path, {});
+          },
+          items: function(category_id, config) {
+            return api.get(path + category_id + '/items', config);
+          }
+        };
+      })(),
+      Items: (function() {
+        var path = '/items/';
+        return {
+          latest: function() {
+            return api.get(path + 'latest', {});
+          },
+          search: function(obj) {
+            var url = path + 'search?' + convertJsonAsUriParameters(obj);
+            return api.get(url, {});
+          }
+        };
+      })(),
+      Site: (function() {
+        var path = '/performance';
+        return {
+          performance: function() {
+            return api.get(path, {});
+          }
+        };
+      })(),
+      Login: (function() {
+        var path = '/visitors/';
+        return {
+          signin: function(obj) {
+            return api.post(path + 'login', obj);
+          },
+          get: function() {
+            return api.get(path, {});
+          },
+          save: function(obj) {
+            return api.put(path, obj);
+          },
+          // TODO: Need to be tested
+          device: function(obj) {
+            return api.post(path + 'devices', obj);
+          },
+          // TODO: Need to be tested
+          update: function(obj) {
+            return api.put(path + 'devices/' + obj.uuid);
+          },
+          reset: function(obj) {
+            return api.post(path + 'forgot_password', obj);
+          }
+        };
+      })(),
+      Devices: (function() {
+        var path = '/devices/';
+        return {
+          save: function(obj) {
+            return api.put(path + obj.uuid, obj);
+          } 
+        };
+      })(),
+      Poll: (function() {
+        var path = '/items/';
+        return {
+          submit: function(obj) {
+            return api.post(path + obj.id + '/poll', obj.params);
+          }
+        };
+      })(),
+      Mail: (function() {
+        var path = '/mail/';
+        return {
+          save: function(obj) {
+            return api.post(path, obj);
+          }
+        };
+      })(),
+      Config: (function() {
+        return {
+          setProperties: function(prop) {
+            angular.extend(config, prop);
+          },
+          getProperties: function() {
+            return config;
+          },
+          setProperty: function(name, value) {
+            config[name] = value;
+          },
+          getProperty: function(name) {
+            return config[name];
+          }
+        };
+      })()
+    };
+    
+    return app;
+  }
+})();
 /* global angular */
 /* eslint no-undef: "error" */
 (function () {
   'use strict';
 
-  angular.module('ngMeumobi.Utils.filters', [])
+  hrefToJS.$inject = ["$sce", "$sanitize"];
+  angular.module('ngMeumobi.Utils.filters', ['ngSanitize'])
   .filter('isEmpty', isEmpty)
   .filter('br2nl', br2nl)
-  .filter('striptags', striptags);
+  .filter('striptags', striptags)
+  .filter('bytesToSize', bytesToSize)
+  .filter('hrefToJS', hrefToJS)
+  .filter('capitalize', capitalize);
 
   function isEmpty() {
     return function (obj) {
@@ -1340,34 +2190,35 @@ function mediaOpenClass(MIMES) {
   function striptags() {
     return function (text) {
       return angular
-          .element('<div/>')
-          .html(text)
-          .text();
+      .element('<div/>')
+      .html(text)
+      .text();
     };
   }
-})();
-
-/* global angular */
-/* eslint no-undef: "error" */
-/*
-  TODO: should release minified (.min.js) and not (.js)
-*/
-(function () {
-  'use strict';
-
-  angular.module('ngMeumobi.Utils', [
-    //'ngMeumobi.Utils.api',
-    'ngMeumobi.Utils.loading',
-    //'ngMeumobi.Utils.connection',
-    'ngMeumobi.Utils.phoneCall',
-    'ngMeumobi.Utils.calendar',
-    'ngMeumobi.Utils.analytics',
-    'ngMeumobi.Utils.socialSharing',
-    'ngMeumobi.Utils.dialogs',
-    'ngMeumobi.Utils.files',
-    'ngMeumobi.Utils.device',
-    'ngMeumobi.Utils.authentication',
-    'ngMeumobi.Utils.push'
-  ]);
   
+  function capitalize() {
+    return function(input, scope) {
+      if (input!=null)
+      input = input.toLowerCase();
+      return input.substring(0,1).toUpperCase()+input.substring(1);
+    } 
+  }
+  
+  function bytesToSize() {
+    return function(bytes) {
+      if (bytes == 0) return '0 Byte';
+      var k = 1000;
+      var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+      var i = Math.floor(Math.log(bytes) / Math.log(k));
+      return (bytes / Math.pow(k, i)).toPrecision(3) + ' ' + sizes[i];
+    }
+  }
+
+  function hrefToJS ($sce, $sanitize) {
+    return function(text) {
+      var regex = /href="([\S]+)"/g;
+      var newString = $sanitize(text).replace(regex, "onClick=\"window.open('$1', '_blank', 'location=yes')\"");
+      return $sce.trustAsHtml(newString);
+    }
+  }
 })();

@@ -31,8 +31,8 @@ gulp.task('build', function () {
 	var streamBuildAction = streamqueue({
 		objectMode: true
 	  },
-    gulp.src(config.vendor.js),
-    gulp.src(['src/**/module.js', 'src/filters/*.js', 'src/lib/*.js'])
+    //gulp.src(config.vendor.js),
+    gulp.src(['src/**/module.js', 'src/filters/*.js', 'src/lib/**/*.js'])
   );
   return streamBuildAction
   .pipe($.angularFilesort())
@@ -56,17 +56,23 @@ gulp.task('build', function () {
   https://glebbahmutov.com/blog/1-2-3-linted/
   $ npm install gulp-eslint eslint-plugin-angular eslint-config-angular
 https://github.com/Gillespie59/eslint-plugin-angular
-*/
-gulp.task('eslint', function() {
-  return gulp.src('./src/lib/*.js')
+
   .pipe($.eslint({
     'rules':{
       'quotes': [1, 'single'],
       'semi': [1, 'always'],
       'angular/deferred': [1, 'always'],
+      'no-inner-declarations': 1
       //'angular/definedundefined': [0, 'always']
     }
   }))
+*/
+gulp.task('eslint', function() {
+  return gulp.src('./src/lib/**/*.js')
+  .pipe($.eslint({
+  			// Load a specific ESLint config
+  			configFile: '.eslintrc.json'
+  		}))
   .pipe($.eslint.format())
   .pipe($.eslint.failAfterError());
 });

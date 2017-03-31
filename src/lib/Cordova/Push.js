@@ -2,8 +2,7 @@
 	'use strict';
 
 	angular
-	.module('ngMeumobi.Utils.push', [])
-	
+	.module('ngMeumobi.Cordova.push', [])
 	.factory('pushwoosh', initPushwoosh)
 	.factory('onesignal', OneSignalImpl);
   

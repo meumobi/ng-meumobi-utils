@@ -1,3 +1,4 @@
 module.exports = {
-    "extends": "angular"
+	"extends": "eslint:recommended",    
+	"extends": "angular"
 };

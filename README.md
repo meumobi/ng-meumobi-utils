@@ -1,7 +1,56 @@
 ng-meumobi-utils was built to help make app development with meumobi faster and more efficient than ever before. It gives you simple AngularJS wrappers for the most popular Cordova and PhoneGap plugins available. 
 
+# Best Practices
 
+## Don't Forget To Cancel $timeout Timers
+https://www.bennadel.com/blog/2548-don-t-forget-to-cancel-timeout-timers-in-your-destroy-events-in-angularjs.htm
 
+## Promises - reject vs. throw
+
+The .then() handler catches the thrown exception and turns it into a rejected promise automatically.
+
+http://stackoverflow.com/questions/33445415/javascript-promises-reject-vs-throw
+
+## localStorage.getItem('item') vs localStorage.item or localStorage['item']?
+http://stackoverflow.com/questions/12632463/is-localstorage-getitemitem-better-than-localstorage-item-or-localstoragei
+
+## Promise: always add catch
+https://pouchdb.com/2015/05/18/we-have-a-problem-with-promises.html
+
+## The Deferred anti-pattern
+In Deferred anti-pattern, "deferred" objects are created for no reason, complicating code.
+
+https://blog.domenic.me/the-revealing-constructor-pattern/
+https://github.com/petkaantonov/bluebird/wiki/Promise-anti-patterns#the-deferred-anti-pattern
+
+## The .then(success, fail) anti-pattern
+https://github.com/petkaantonov/bluebird/wiki/Promise-anti-patterns#the-thensuccess-fail-anti-pattern
+
+```javascript
+
+    function getUUID() {
+      
+      return new Promise(function (resolve, reject) {
+        
+        var cb_uuid = {
+          success: function(uuid) {
+            resolve(uuid);
+          },
+          fail: function() {
+            throw new Error('Unable to retrieve Device uuid');
+          }
+        };
+        
+        var uniqueDeviceID = $window.plugins && $window.plugins.uniqueDeviceID;
+        
+        if (uniqueDeviceID) {
+          uniqueDeviceID.get(cb_uuid.success, cb_uuid.fail);
+        } else {
+          throw new Error('Missing cordova-plugin-uniquedeviceid Plugin');
+        }      
+      });
+    }
+```
 - [gulp-angular-filesort](https://www.npmjs.com/package/gulp-angular-filesort): Automatically sort AngularJS app files depending on module definitions and usage
 - [gulp-sourcemaps](https://www.npmjs.com/package/gulp-sourcemaps)
 

@@ -2,7 +2,7 @@
   'use strict';
   
   angular
-  .module('ngMeumobi.Utils.files', ['slugifier'])
+  .module('ngMeumobi.Cordova.files', ['slugifier'])
   .constant('MIMES', {
     'application/pdf': {
       class: 'fa-file-pdf-o',
@@ -52,9 +52,9 @@
   .filter('mediaClickLabel', mediaClickLabel)
   .filter('mediaIconClass', mediaIconClass)
   .filter('mediaOpenClass', mediaOpenClass) 
-  .provider('meuFiles', meuFiles); 
+  .provider('meuFiles', files); 
         
-  function meuFiles() {
+  function files() {
     var fileTransfers = {};
     var files = {};
     var options = {
@@ -67,7 +67,7 @@
     };
     
     this.setOptions = function(options) {
-      angular.extend(options, options);
+      angular.extend(options, opt);
     };
 
     this.setOption = function(name, value) {

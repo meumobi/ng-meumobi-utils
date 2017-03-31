@@ -1,10 +1,23 @@
 {
-    "extends": "defaults",
-    "plugins": [
-        "standard",
-        "promise"
-    ],
-"rules": {
-	"semi": "error"
-}
+	"extends": "eslint:recommended",
+	"extends": "angular",	
+	"rules": {
+		"angular/deferred": 1,
+		"no-inner-declarations": 1,
+		"no-alert": 0,
+		"no-bitwise": 0,
+		"camelcase": 0,
+		"curly": 0,
+		"eqeqeq": 0,
+		"no-eq-null": 0,
+		"guard-for-in": 0,
+		"no-empty": 1
+	},
+	"globals": {
+		"$": false
+	},
+	"env": {
+		"browser": true,
+		"node": true
+	}
 }

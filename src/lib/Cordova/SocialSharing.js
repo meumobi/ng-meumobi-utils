@@ -2,14 +2,21 @@
 	'use strict';
 
 	angular
-	.module('ngMeumobi.Utils.socialSharing', [])
-	.factory('meuSocialSharing', ['$q', '$window', 'striptagsFilter', 'br2nlFilter', '$log', meuSocialSharing]);
+	.module('ngMeumobi.Cordova.socialSharing', [])
+	.factory('meuSocialSharing', ['$q', '$window', 'striptagsFilter', 'br2nlFilter', '$log', socialSharing]);
   
   /*
     cordova plugin add https://github.com/EddyVerbruggen/SocialSharing-PhoneGap-Plugin
+  
+  How to use it: 
+    meuSocialSharing.shareItem()
+    .then(function(result) {})
+    .catch(function(error) {});
+  
+    meuSocialSharing.shareMedia()
   */
   
-  function meuSocialSharing($q, $window, striptags, br2nl, $log) {
+  function socialSharing($q, $window, striptags, br2nl, $log, $exceptionHandler) {
     
     var service = {};
     var options = {
@@ -26,7 +33,7 @@
     return service;
 
     function setOptions(options) {
-      angular.extend(options, options);
+      angular.extend(options, opt);
     }
 
     function setOption(name, value) {
@@ -88,35 +95,37 @@
         chooserTitle: 'Pick an app' // Android only, you can override the default share sheet title
       }
     */
-      var d = $q.defer();			
-      var social = $window.plugins && $window.plugins.socialsharing;
-      
-      // If params.description is null
-    
-			if (social) {
-        if (options.postfix) {
-  				params.subject += options.postfix;
-        }
-      
-        params.message = params.message && striptags(br2nl(params.message));
-        params.subject = params.subject && striptags(br2nl(params.subject));
+      return $q(function(resolve, reject) {
+        
         var cb_share = {
           success: function(result) {
-            d.resolve(result);
+            resolve(result);
           },
           fail: function(msg) {
-            d.reject(msg);
+            throw new Error('[CALLBACK FAILURE]: social.shareWithOptions');
           }  
         };
         
-        $log.debug('shareWithOptions');
-        $log.debug(params);
-        social.shareWithOptions(params, cb_share.success, cb_share.fail); 
-			} else {
-			  d.reject('Plugin socialsharing missing');
-			}
+        try {
+          var social = $window.plugins && $window.plugins.socialsharing;
+    
+    			if (social) {
+            if (options.postfix) {
+      				params.subject += options.postfix;
+            }
       
-      return d.promise;
+            params.message = params.message && striptags(br2nl(params.message));
+            params.subject = params.subject && striptags(br2nl(params.subject));
+
+            social.shareWithOptions(params, cb_share.success, cb_share.fail); 
+    			} else {
+    			  throw new Error('[PLUGIN MISSING]: cordova-plugin-x-socialsharing');
+    			}          
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
 		}
   }
 })();

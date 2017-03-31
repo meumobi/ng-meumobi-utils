@@ -2,8 +2,8 @@
 	'use strict';
   
 	angular
-	.module('ngMeumobi.Utils.device', [])
-	.factory('meuDevice', meuDevice);
+	.module('ngMeumobi.Cordova.device', [])
+	.factory('meuDevice', cdvDevice);
   
   /*
     npm install: 
@@ -19,7 +19,7 @@
       .catch(function(error) {});
   */
   
-	function meuDevice($log, $window, $q, $exceptionHandler) {
+	function cdvDevice($log, $window, $q, $exceptionHandler) {
     
     var service = {};
     
@@ -110,7 +110,7 @@
           
           resolve(properties);
         } catch (e) {
-          $exceptionHandler(e)
+          $exceptionHandler(e);
           reject(e);
         } 
       });

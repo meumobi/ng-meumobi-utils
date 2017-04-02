@@ -62,7 +62,8 @@
         $log.debug('Response Status: ' + response.status);
   			$log.debug(response);
   			$log.debug('[API:errorInterceptor]: END');
-  			if (response && response.status === 0) {} // network offline or CORS error
+  			if (response && response.status === -1) {} // Client timeout fired
+        if (response && response.status === 0) {} // network offline or CORS error
   			if (response && response.status === 404) {}
   			if (response && response.status === 401) {
           $rootScope.$broadcast('error:401');

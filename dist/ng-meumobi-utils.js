@@ -1,311 +1,5 @@
 (function() {
   'use strict';
-  
-  angular
-  .module('ngMeumobi.Utils.localStorage', [])
-  .factory('meuLocalStorage', localStorage);
-  
-  function localStorage() {
-    
-    var service = {};
-    
-    service.getObject = getObject;
-    service.setObject = setObject;
-    service.removeObject = removeObject;
-    service.contains = contains;
-    
-    return service;
-    
-    function getObject(key) {
-      return angular.fromJson(localStorage.getItem(key));
-    };
-
-    function setObject(key, value) {
-      localStorage.setItem(key, angular.toJson(value));
-    };
-
-    function removeObject(key) {
-      localStorage.removeItem(key);
-    };
-
-    function contains(key) {
-      return localStorage.getItem(key) ? true : false;
-    };
-  }
-})();
-(function() {
-  'use strict';
-
-  httpWithFallback.$inject = ["$q", "$log", "$exceptionHandler", "$http"];
-  angular
-  .module('ngMeumobi.Utils.httpWithFallback', [])
-  .factory('meuHttpWithFallback', httpWithFallback);
-  
-  function httpWithFallback($q, $log, $exceptionHandler, $http) {
-
-    // Constructor function, using $http as prototype
-    function HttpWithFallback() { }
-    HttpWithFallback.prototype = $http;
-    HttpWithFallback.prototype.constructor = HttpWithFallback;
-
-    var httpWithFallback = new HttpWithFallback();
-
-    var prepareStoredResponse = function(storedResponse) {
-      // Data was successfully retrieved from local storage, resolve with status 200
-      storedResponse = angular.fromJson(storedResponse);
-      var headers = storedResponse.headers;
-      storedResponse.headers = function() { return headers; };
-      return storedResponse;
-    };
-
-    var makeRequest = function(url, config, deferred) {
-      $http.get(url, config)
-      .then(
-        function(response) {
-          $log.debug('[httpWithFallback]: then response success status:' + response.status);
-          // Store in local storage when status === 200
-          if (!response.config.dontStoreFallback && response.status === 200) {
-            localStorage.setItem(url, angular.toJson({
-              data: response.data,
-              status: response.status,
-              config: response.config,
-              headers: response.headers(),
-              isFallback: true
-            }));
-          }
-          // Resolve with original response
-          if (response.headers('etag') === response.config['If-None-Match'])
-            response.unchanged = true;
-          deferred.resolve(response);
-        },
-        function(response) {
-          $log.debug('[httpWithFallback]: then response fail status:' + response.status);
-          // Try to retrieve from local storage
-          var storedResponse = localStorage.getItem(url);
-          if (storedResponse) {
-            return deferred.resolve(prepareStoredResponse(storedResponse));
-          }
-
-          // Try config.fallback
-          if (response.config.fallback) {
-            return deferred.resolve({
-              data: config.fallback,
-              status: response.status,
-              headers: response.headers,
-              config: response.config,
-              isFallback: true
-            });
-          }
-
-          // Reject with original error response
-          return deferred.reject(response);
-        }
-      );
-
-      // Decorate promise with success and error functions to be compatible with the promise returned by $http.get
-      var promise = deferred.promise;
-
-      promise.success = function(fn) {
-        promise.then(function(response) {
-          fn(response.data, response.status, response.headers, config, response.isFallback);
-        });
-        return promise;
-      };
-
-      promise.error = function(fn) {
-        promise.then(null, function(response) {
-          fn(response.data, response.status, response.headers, config);
-        });
-        return promise;
-      };
-
-      return promise;
-    };
-    /**
-    * Override $http.get to catch the promise.error
-    */
-    httpWithFallback.get = function(url, config) {
-      // Client doesn't support local storage
-      if (!localStorage) {
-        // If no fallback defined, just just $http.get
-        if (!config.fallback) {
-          return $http.get(url, config);
-        }
-        // Local storage won't be used
-        config.dontStoreFallback = true;
-      }
-
-      // Delegate get to $http
-      var deferred = $q.defer();
-      var storedResponse = localStorage.getItem(url);
-
-      if (storedResponse) {
-        //second promise to update data after request
-        var deferredRequest = $q.defer();
-        storedResponse = prepareStoredResponse(storedResponse);
-        var cache = storedResponse;          
-        // If config is undefined, ie httpWithFallback.get(PATH)
-        // config = typeof config !== 'undefined' ? config : {};
-        config = angular.isDefined(config) ? config : {};         
-        if (cache && cache.headers())
-          config['If-None-Match'] = cache.headers().etag;
-        storedResponse.promise = makeRequest(url, config, deferredRequest);
-        deferred.resolve(storedResponse);
-        return deferred.promise;
-      }
-      //don't have local, continue to request
-      return makeRequest(url, config, deferred);
-    };
-
-    return httpWithFallback;
-  };
-})();
-(function() {
-	'use strict';
-
-	loadingInterceptor.$inject = ["$q", "$rootScope", "$log"];
-  errorInterceptor.$inject = ["$q", "$rootScope", "$log"];
-	angular
-	.module('ngMeumobi.Utils.httpInterceptors', [])
-	.factory('meuLoadingInterceptor', loadingInterceptor)
-  .factory('meuErrorInterceptor', errorInterceptor);
-	
-	function loadingInterceptor($q, $rootScope, $log) {
-		
-		var numLoadings = 0;
-		
-		return {
-			request: function(config) {
-        if (!numLoadings++) {
-          $rootScope.$broadcast('loading:start');
-        }
-
-				return config || $q.when(config);
-			},
-			response: function(response) {
-				if (!(--numLoadings)) {
-					$rootScope.$broadcast('loading:stop');
-				}
-
-				return response || $q.when(response);
-			},
-			requestError: function(request) {
-				if (!(--numLoadings)) {
-					$rootScope.$broadcast('loading:stop');
-				}
-
-				return $q.reject(request);
-			},
-			responseError: function(response) {
-				if (!(--numLoadings)) {
-					$rootScope.$broadcast('loading:stop');
-				}
-				
-				return $q.reject(response);
-			}
-		};
-	}
-  
-  function errorInterceptor($q, $rootScope, $log) {
-    
-  	return {
-  		request: function(config) {
-        
-  			return config || $q.when(config);
-  		},
-  		requestError: function(request) {
-        
-  			return $q.reject(request);
-  		},
-  		response: function(response) {
-        
-  			return response || $q.when(response);
-  		},
-  		responseError: function(response) {
-  			$log.debug('[API:errorInterceptor]: BEGIN');
-        $log.debug('Response Status: ' + response.status);
-  			$log.debug(response);
-  			$log.debug('[API:errorInterceptor]: END');
-  			if (response && response.status === 0) {} // network offline or CORS error
-  			if (response && response.status === 404) {}
-  			if (response && response.status === 401) {
-          $rootScope.$broadcast('error:401');
-  			}
-  			if (response && response.status === 408) {} // Server timed out waiting for the request.
-  			if (response && response.status >= 500) {}
-        
-  			return $q.reject(response);
-  		}
-  	};
-  }
-})();
-(function() {
-	'use strict';
-  
-	deviceReady.$inject = ["$log", "$window"];
-	angular
-	.module('ngMeumobi.Utils.deviceReady', [])
-	.factory('meuDeviceReady', deviceReady);
-  
-  /*
-  
-    How to use it: 
-      meuDeviceReady(function() {
-        ...
-      });
-  */
-  
-	function deviceReady($log, $window) {
-		return function(done) {
-			if (angular.isObject($window.cordova)) {
-        /*eslint-disable angular/document-service */
-        document.addEventListener('deviceready', function(event) {
-					done();
-				}, false);
-        /*eslint-enable angular/document-service */
-			} else {
-				done();
-			}
-		};
-	}
-})();
-(function() {
-  'use strict';
-  
-  authentication.$inject = ["$http", "$rootScope", "$timeout"];
-  angular
-  .module('ngMeumobi.Utils.authentication', [])
-  .factory('meuAuthentication', authentication);
-  
-  /*
-  Inspired by Jason Watmore Blog Post
-  http://jasonwatmore.com/post/2014/05/26/angularjs-basic-http-authentication-example
-  */
-
-  function authentication($http, $rootScope, $timeout) {
-    
-    var service = {};
-    service.SetCredentials = function (data) { 
-      /*
-      *  data.visitor && data.token
-      */
-      $rootScope.auth = data;
-
-      $http.defaults.headers.common['X-Visitor-Token'] = data.token;
-      localStorage.globals = angular.toJson($rootScope.auth);
-    };
-
-    service.ClearCredentials = function () {
-      $rootScope.auth = {};
-      localStorage.removeItem('auth');
-      delete $http.defaults.headers.common['X-Visitor-Token'];
-    };
-
-    return service;
-  }
-})();
-(function() {
-  'use strict';
 
   statusbar.$inject = ["$q", "$window", "$log", "$exceptionHandler"];
   angular
@@ -1586,7 +1280,7 @@ function mediaOpenClass(MIMES) {
 (function() {
 	'use strict';
   
-	googleAnalytics.$inject = ["$log", "$q"];
+	googleAnalytics.$inject = ["$q", "$window", "$log", "$exceptionHandler"];
   $cordovaGoogleAnalytics.$inject = ["$q", "$window", "$log", "$exceptionHandler"];
 	analytics.$inject = ["$injector", "$window"];
 	angular
@@ -1616,7 +1310,7 @@ function mediaOpenClass(MIMES) {
     function startTrackerWithId(id) {
       return $q(function(resolve, reject) {
         try {
-          $window.ga.startTrackerWithId(id, 10);
+          $window.ga.startTrackerWithId(id, 20);
           $log.debug('Start tracking GA Id: ' + id);
           resolve();
         } catch (e) {
@@ -1654,7 +1348,7 @@ function mediaOpenClass(MIMES) {
     }
   }
   
-	function googleAnalytics($log, $q) {
+	function googleAnalytics($q, $window, $log, $exceptionHandler) {
     
     var service = {};
     
@@ -1664,25 +1358,41 @@ function mediaOpenClass(MIMES) {
     
     return service;
     
-    function init(trackId) {
-      $log.debug('Google Analytics track Id: ' + trackId);
-    }
-    
-    function trackView(title) {
-      $log.debug('Tracking Page: ' + title);
+    function trackView(screenName) {
+      return $q(function(resolve, reject) {
+        try {
+          $log.debug('Track View: ' + screenName);
+          resolve();
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
     }
     
     function trackEvent(category, action, label, value) {
-      $log.debug('Tracking Event: ' + action);
+      return $q(function(resolve, reject) {
+        try {
+          var ev = [category, action, label, value];
+          $log.debug('Track Event: ' + ev.toString());
+          resolve();
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
     }
     
     function startTrackerWithId(id) {
-      var msg = 'Tracking GA Id: ' + id;
-      var d = $q.defer();
-
-      d.resolve(msg);
-
-      return d.promise;
+      return $q(function(resolve, reject) {
+        try {
+          $log.debug('Start tracking GA Id: ' + id);
+          resolve();
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
     }
 	}
   
@@ -1694,6 +1404,313 @@ function mediaOpenClass(MIMES) {
 		  return $injector.get('googleAnalytics');
 		}
 	}
+})();
+(function() {
+  'use strict';
+  
+  angular
+  .module('ngMeumobi.Utils.localStorage', [])
+  .factory('meuLocalStorage', localStorage);
+  
+  function localStorage() {
+    
+    var service = {};
+    
+    service.getObject = getObject;
+    service.setObject = setObject;
+    service.removeObject = removeObject;
+    service.contains = contains;
+    
+    return service;
+    
+    function getObject(key) {
+      return angular.fromJson(localStorage.getItem(key));
+    };
+
+    function setObject(key, value) {
+      localStorage.setItem(key, angular.toJson(value));
+    };
+
+    function removeObject(key) {
+      localStorage.removeItem(key);
+    };
+
+    function contains(key) {
+      return localStorage.getItem(key) ? true : false;
+    };
+  }
+})();
+(function() {
+  'use strict';
+
+  httpWithFallback.$inject = ["$q", "$log", "$exceptionHandler", "$http"];
+  angular
+  .module('ngMeumobi.Utils.httpWithFallback', [])
+  .factory('meuHttpWithFallback', httpWithFallback);
+  
+  function httpWithFallback($q, $log, $exceptionHandler, $http) {
+
+    // Constructor function, using $http as prototype
+    function HttpWithFallback() { }
+    HttpWithFallback.prototype = $http;
+    HttpWithFallback.prototype.constructor = HttpWithFallback;
+
+    var httpWithFallback = new HttpWithFallback();
+
+    var prepareStoredResponse = function(storedResponse) {
+      // Data was successfully retrieved from local storage, resolve with status 200
+      storedResponse = angular.fromJson(storedResponse);
+      var headers = storedResponse.headers;
+      storedResponse.headers = function() { return headers; };
+      return storedResponse;
+    };
+
+    var makeRequest = function(url, config, deferred) {
+      $http.get(url, config)
+      .then(
+        function(response) {
+          $log.debug('[httpWithFallback]: then response success status:' + response.status);
+          // Store in local storage when status === 200
+          if (!response.config.dontStoreFallback && response.status === 200) {
+            localStorage.setItem(url, angular.toJson({
+              data: response.data,
+              status: response.status,
+              config: response.config,
+              headers: response.headers(),
+              isFallback: true
+            }));
+          }
+          // Resolve with original response
+          if (response.headers('etag') === response.config['If-None-Match'])
+            response.unchanged = true;
+          deferred.resolve(response);
+        },
+        function(response) {
+          $log.debug('[httpWithFallback]: then response fail status:' + response.status);
+          // Try to retrieve from local storage
+          var storedResponse = localStorage.getItem(url);
+          if (storedResponse) {
+            return deferred.resolve(prepareStoredResponse(storedResponse));
+          }
+
+          // Try config.fallback
+          if (response.config.fallback) {
+            return deferred.resolve({
+              data: config.fallback,
+              status: response.status,
+              headers: response.headers,
+              config: response.config,
+              isFallback: true
+            });
+          }
+
+          // Reject with original error response
+          return deferred.reject(response);
+        }
+      );
+
+      // Decorate promise with success and error functions to be compatible with the promise returned by $http.get
+      var promise = deferred.promise;
+
+      promise.success = function(fn) {
+        promise.then(function(response) {
+          fn(response.data, response.status, response.headers, config, response.isFallback);
+        });
+        return promise;
+      };
+
+      promise.error = function(fn) {
+        promise.then(null, function(response) {
+          fn(response.data, response.status, response.headers, config);
+        });
+        return promise;
+      };
+
+      return promise;
+    };
+    /**
+    * Override $http.get to catch the promise.error
+    */
+    httpWithFallback.get = function(url, config) {
+      // Client doesn't support local storage
+      if (!localStorage) {
+        // If no fallback defined, just just $http.get
+        if (!config.fallback) {
+          return $http.get(url, config);
+        }
+        // Local storage won't be used
+        config.dontStoreFallback = true;
+      }
+
+      // Delegate get to $http
+      var deferred = $q.defer();
+      var storedResponse = localStorage.getItem(url);
+
+      if (storedResponse) {
+        //second promise to update data after request
+        var deferredRequest = $q.defer();
+        storedResponse = prepareStoredResponse(storedResponse);
+        var cache = storedResponse;          
+        // If config is undefined, ie httpWithFallback.get(PATH)
+        // config = typeof config !== 'undefined' ? config : {};
+        config = angular.isDefined(config) ? config : {};         
+        if (cache && cache.headers())
+          config['If-None-Match'] = cache.headers().etag;
+        storedResponse.promise = makeRequest(url, config, deferredRequest);
+        deferred.resolve(storedResponse);
+        return deferred.promise;
+      }
+      //don't have local, continue to request
+      return makeRequest(url, config, deferred);
+    };
+
+    return httpWithFallback;
+  };
+})();
+(function() {
+	'use strict';
+
+	loadingInterceptor.$inject = ["$q", "$rootScope", "$log"];
+  errorInterceptor.$inject = ["$q", "$rootScope", "$log"];
+	angular
+	.module('ngMeumobi.Utils.httpInterceptors', [])
+	.factory('meuLoadingInterceptor', loadingInterceptor)
+  .factory('meuErrorInterceptor', errorInterceptor);
+	
+	function loadingInterceptor($q, $rootScope, $log) {
+		
+		var numLoadings = 0;
+		
+		return {
+			request: function(config) {
+        if (!numLoadings++) {
+          $rootScope.$broadcast('loading:start');
+        }
+
+				return config || $q.when(config);
+			},
+			response: function(response) {
+				if (!(--numLoadings)) {
+					$rootScope.$broadcast('loading:stop');
+				}
+
+				return response || $q.when(response);
+			},
+			requestError: function(request) {
+				if (!(--numLoadings)) {
+					$rootScope.$broadcast('loading:stop');
+				}
+
+				return $q.reject(request);
+			},
+			responseError: function(response) {
+				if (!(--numLoadings)) {
+					$rootScope.$broadcast('loading:stop');
+				}
+				
+				return $q.reject(response);
+			}
+		};
+	}
+  
+  function errorInterceptor($q, $rootScope, $log) {
+    
+  	return {
+  		request: function(config) {
+        
+  			return config || $q.when(config);
+  		},
+  		requestError: function(request) {
+        
+  			return $q.reject(request);
+  		},
+  		response: function(response) {
+        
+  			return response || $q.when(response);
+  		},
+  		responseError: function(response) {
+  			$log.debug('[API:errorInterceptor]: BEGIN');
+        $log.debug('Response Status: ' + response.status);
+  			$log.debug(response);
+  			$log.debug('[API:errorInterceptor]: END');
+  			if (response && response.status === -1) {} // Client timeout fired
+        if (response && response.status === 0) {} // network offline or CORS error
+  			if (response && response.status === 404) {}
+  			if (response && response.status === 401) {
+          $rootScope.$broadcast('error:401');
+  			}
+  			if (response && response.status === 408) {} // Server timed out waiting for the request.
+  			if (response && response.status >= 500) {}
+        
+  			return $q.reject(response);
+  		}
+  	};
+  }
+})();
+(function() {
+	'use strict';
+  
+	deviceReady.$inject = ["$log", "$window"];
+	angular
+	.module('ngMeumobi.Utils.deviceReady', [])
+	.factory('meuDeviceReady', deviceReady);
+  
+  /*
+  
+    How to use it: 
+      meuDeviceReady(function() {
+        ...
+      });
+  */
+  
+	function deviceReady($log, $window) {
+		return function(done) {
+			if (angular.isObject($window.cordova)) {
+        /*eslint-disable angular/document-service */
+        document.addEventListener('deviceready', function(event) {
+					done();
+				}, false);
+        /*eslint-enable angular/document-service */
+			} else {
+				done();
+			}
+		};
+	}
+})();
+(function() {
+  'use strict';
+  
+  authentication.$inject = ["$http", "$rootScope", "$timeout"];
+  angular
+  .module('ngMeumobi.Utils.authentication', [])
+  .factory('meuAuthentication', authentication);
+  
+  /*
+  Inspired by Jason Watmore Blog Post
+  http://jasonwatmore.com/post/2014/05/26/angularjs-basic-http-authentication-example
+  */
+
+  function authentication($http, $rootScope, $timeout) {
+    
+    var service = {};
+    service.SetCredentials = function (data) { 
+      /*
+      *  data.visitor && data.token
+      */
+      $rootScope.auth = data;
+
+      $http.defaults.headers.common['X-Visitor-Token'] = data.token;
+      localStorage.globals = angular.toJson($rootScope.auth);
+    };
+
+    service.ClearCredentials = function () {
+      $rootScope.auth = {};
+      localStorage.removeItem('auth');
+      delete $http.defaults.headers.common['X-Visitor-Token'];
+    };
+
+    return service;
+  }
 })();
 (function(global) {
   'use strict';
@@ -1880,6 +1897,8 @@ function mediaOpenClass(MIMES) {
       function init() {
         if (options.hasOwnProperty('apiUrl'))
           meuAPI.Config.setProperty('apiUrl', options.apiUrl);
+        if (options.hasOwnProperty('timeout'))
+          meuAPI.Config.setProperty('timeout', options.timeout);
       }
            
       function getCategory(id) {
@@ -1973,8 +1992,10 @@ function mediaOpenClass(MIMES) {
   
   function API($rootScope, $http, $log, $exceptionHandler, meuHttpWithFallback) {
   
-    var config = {};
-    
+    var config = {
+      timeout: 10000
+    };
+        
     var convertJsonAsUriParameters = function(data) {
       var url = Object.keys(data).map(function(k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]);
@@ -1999,14 +2020,15 @@ function mediaOpenClass(MIMES) {
 
     var api = (function() {
       return {
-        get: function(endp, config) {
-          var url = buildUrl(endp);
+        get: function(endp, obj) {
+          angular.extend(obj, {timeout: config.timeout});
       
-          return meuHttpWithFallback.get(url, config);
+          return meuHttpWithFallback.get(buildUrl(endp), obj);
         },
-        post: function(endp, obj) {
+        post: function(endp, obj) {          
           return $http({
             method: 'POST',
+            timeout: config.timeout,
             url: buildUrl(endp),
             data: angular.toJson(obj),
             responseType: 'json',
@@ -2015,9 +2037,10 @@ function mediaOpenClass(MIMES) {
             }
           });
         },
-        put: function(endp, obj) {
+        put: function(endp, obj) {          
           return $http({
             method: 'PUT',
+            timeout: config.timeout,
             url: buildUrl(endp),
             data: angular.toJson(obj),
             responseType: 'json',
@@ -2029,6 +2052,7 @@ function mediaOpenClass(MIMES) {
         del: function(endp, id) {
           return $http({
             method: 'DELETE',
+            timeout: config.timeout,
             url: buildUrl(endp),
             responseType: 'json',
           });

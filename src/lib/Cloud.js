@@ -101,6 +101,8 @@
       function init() {
         if (options.hasOwnProperty('apiUrl'))
           meuAPI.Config.setProperty('apiUrl', options.apiUrl);
+        if (options.hasOwnProperty('timeout'))
+          meuAPI.Config.setProperty('timeout', options.timeout);
       }
            
       function getCategory(id) {
@@ -194,8 +196,10 @@
   
   function API($rootScope, $http, $log, $exceptionHandler, meuHttpWithFallback) {
   
-    var config = {};
-    
+    var config = {
+      timeout: 10000
+    };
+        
     var convertJsonAsUriParameters = function(data) {
       var url = Object.keys(data).map(function(k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]);
@@ -220,14 +224,15 @@
 
     var api = (function() {
       return {
-        get: function(endp, config) {
-          var url = buildUrl(endp);
+        get: function(endp, obj) {
+          angular.extend(obj, {timeout: config.timeout});
       
-          return meuHttpWithFallback.get(url, config);
+          return meuHttpWithFallback.get(buildUrl(endp), obj);
         },
-        post: function(endp, obj) {
+        post: function(endp, obj) {          
           return $http({
             method: 'POST',
+            timeout: config.timeout,
             url: buildUrl(endp),
             data: angular.toJson(obj),
             responseType: 'json',
@@ -236,9 +241,10 @@
             }
           });
         },
-        put: function(endp, obj) {
+        put: function(endp, obj) {          
           return $http({
             method: 'PUT',
+            timeout: config.timeout,
             url: buildUrl(endp),
             data: angular.toJson(obj),
             responseType: 'json',
@@ -250,6 +256,7 @@
         del: function(endp, id) {
           return $http({
             method: 'DELETE',
+            timeout: config.timeout,
             url: buildUrl(endp),
             responseType: 'json',
           });

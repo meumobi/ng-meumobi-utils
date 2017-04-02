@@ -28,7 +28,7 @@
     function startTrackerWithId(id) {
       return $q(function(resolve, reject) {
         try {
-          $window.ga.startTrackerWithId(id, 10);
+          $window.ga.startTrackerWithId(id, 20);
           $log.debug('Start tracking GA Id: ' + id);
           resolve();
         } catch (e) {
@@ -66,7 +66,7 @@
     }
   }
   
-	function googleAnalytics($log, $q) {
+	function googleAnalytics($q, $window, $log, $exceptionHandler) {
     
     var service = {};
     
@@ -76,25 +76,41 @@
     
     return service;
     
-    function init(trackId) {
-      $log.debug('Google Analytics track Id: ' + trackId);
-    }
-    
-    function trackView(title) {
-      $log.debug('Tracking Page: ' + title);
+    function trackView(screenName) {
+      return $q(function(resolve, reject) {
+        try {
+          $log.debug('Track View: ' + screenName);
+          resolve();
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
     }
     
     function trackEvent(category, action, label, value) {
-      $log.debug('Tracking Event: ' + action);
+      return $q(function(resolve, reject) {
+        try {
+          var ev = [category, action, label, value];
+          $log.debug('Track Event: ' + ev.toString());
+          resolve();
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
     }
     
     function startTrackerWithId(id) {
-      var msg = 'Tracking GA Id: ' + id;
-      var d = $q.defer();
-
-      d.resolve(msg);
-
-      return d.promise;
+      return $q(function(resolve, reject) {
+        try {
+          $log.debug('Start tracking GA Id: ' + id);
+          resolve();
+        } catch (e) {
+          $exceptionHandler(e);
+          reject(e);
+        };
+      });
     }
 	}
   

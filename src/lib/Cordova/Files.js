@@ -36,6 +36,13 @@
       extension: 'mp3',
       download: true
     },
+    'video/mp4': {
+      class: 'fa-file-video-o',
+      label: 'Play',
+      openClass: 'fa-play',
+      extension: 'mp4',
+      download: true
+    },
     'application/vnd.ms-powerpoint': {
       class: 'fa-file-powerpoint-o',
       label: 'View',

@@ -34,6 +34,12 @@
 		return states[networkState];
 	}
 
+	/*
+		For more details:
+		- https://www.joshmorony.com/monitoring-online-and-offline-states-in-an-ionic-application/
+		- https://caniuse.com/#search=online 
+	*/
+
 	function isOnline() {
 		var connection = navigator.connection && navigator.connection.type;
 		if (connection) {

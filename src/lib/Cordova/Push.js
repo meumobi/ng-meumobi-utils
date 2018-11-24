@@ -164,11 +164,13 @@
           var didOpenRemoteNotificationCallBack = function(jsonData) {
             $rootScope.$emit('open-notification', angular.toJson(jsonData));
           };
+          
+          // result.notification.payload.additionalData
 
           pushNotification.startInit(appId)
           .handleNotificationReceived(didReceiveRemoteNotificationCallBack)
           .handleNotificationOpened(didOpenRemoteNotificationCallBack)
-          .inFocusDisplaying(pushNotification.OSInFocusDisplayOption.None)
+          .inFocusDisplaying(pushNotification.OSInFocusDisplayOption.InAppAlert)
           .iOSSettings(iosSettings)
           .endInit();
           

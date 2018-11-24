@@ -457,11 +457,13 @@
           var didOpenRemoteNotificationCallBack = function(jsonData) {
             $rootScope.$emit('open-notification', angular.toJson(jsonData));
           };
+          
+          // result.notification.payload.additionalData
 
           pushNotification.startInit(appId)
           .handleNotificationReceived(didReceiveRemoteNotificationCallBack)
           .handleNotificationOpened(didOpenRemoteNotificationCallBack)
-          .inFocusDisplaying(pushNotification.OSInFocusDisplayOption.None)
+          .inFocusDisplaying(pushNotification.OSInFocusDisplayOption.InAppAlert)
           .iOSSettings(iosSettings)
           .endInit();
           
@@ -524,6 +526,13 @@ mediaOpenClass.$inject = ["MIMES"];
       label: 'Play',
       openClass: 'fa-play',
       extension: 'mp3',
+      download: true
+    },
+    'video/mp4': {
+      class: 'fa-file-video-o',
+      label: 'Play',
+      openClass: 'fa-play',
+      extension: 'mp4',
       download: true
     },
     'application/vnd.ms-powerpoint': {

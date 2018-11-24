@@ -15,6 +15,10 @@ Use Resume of Changes from previous command on commit message
 1. $ git tag v2.6.4
 2. $ git push origin v2.6.4 
 
+<a name="v0.0.7"></a>
+# [v0.0.7](https://github.com/meumobi/ng-meumobi-utils/compare/v0.0.6...v0.0.7)
+* ENHANCE: add 'video/mp4' file type and few coding style improvements
+
 <a name="v0.0.6"></a>
 # [v0.0.6](https://github.com/meumobi/ng-meumobi-utils/compare/v0.0.5...v0.0.6)
 * FIX: Analytics should return promise for App AND browser

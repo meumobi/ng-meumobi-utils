@@ -1,4 +1,44 @@
+# ng-meumobi-utils
+
 ng-meumobi-utils was built to help make app development with meumobi faster and more efficient than ever before. It gives you simple AngularJS wrappers for the most popular Cordova and PhoneGap plugins available. 
+
+## Getting started
+
+### Prerequisites
+[Download the installer](https://nodejs.org/) for Node.js 6 or greater.
+Install [Gulp] to build dist.
+
+```sh
+$ npm i gulp@3 -g
++ gulp@3.9.1
+```
+
+### Usage
+
+1. Install
+
+```sh
+% git clone https://github.com/meumobi/ng-meumobi-utils
+% cd ng-meumobi-utils
+% npm i
+```
+
+2. Build
+
+```sh
+% gulp build
+```
+
+3. Release
+
+Tag and Push Release
+
+```sh
+$ git tag v0.0.9
+$ git push origin v0.0.9
+```
+
+4. Profit. :tada:
 
 # Best Practices
 

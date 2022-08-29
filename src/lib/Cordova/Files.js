@@ -29,6 +29,12 @@
       extension: 'xls',
       download: true
     },
+    'application/xlsx': {
+      class: 'fa-file-excel-o',
+      label: 'View',
+      extension: 'xls',
+      download: true
+    },
     'audio/mpeg': {
       class: 'fa-file-audio-o',
       label: 'Play',

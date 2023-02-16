@@ -222,14 +222,16 @@
       };
       
       // Returns the full absolute path from the root to the FileEntry
-      api.getFileFullPath = function (filePath) {
-        var directory = null;
+      api.getFileFullPath = function (fileName) {
+        var rootPath = null;
         if (device.platform == 'Android') {
-          directory = cordova.file.externalDataDirectory;
+          rootPath = cordova.file.externalDataDirectory;
         } else {
-          directory = cordova.file.dataDirectory;
+          rootPath = cordova.file.dataDirectory;
         }
-        return directory + filePath;
+        return api
+          .getDownloadDirEntry(rootPath, options.localFolder)
+          .then((dirEntry) => dirEntry.nativeURL + fileName);
       };
       
       api.getFilePath = function (fileName) {

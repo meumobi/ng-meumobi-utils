@@ -220,6 +220,34 @@
 
         return obj;
       };
+
+      api.getDownloadDirEntry = function (rootPath, dirName) {
+        var q = $q.defer();
+        $window.resolveLocalFileSystemURL(
+          rootPath,
+          function (rootEntry) {
+            // Parameters passed to getDirectory create a new directory or return the directory if it already exists.
+            rootEntry.getDirectory(
+              dirName,
+              { create: true, exclusive: false },
+              function (dirEntry) {
+                q.resolve(dirEntry);
+              },
+              function (error) {
+                $log.debug(error);
+                error = api.fileErrorHandler(error);
+                q.reject(error);
+              }
+            );
+          },
+          function (error) {
+            $log.debug(error);
+            error = api.fileErrorHandler(error);
+            q.reject(error);
+          }
+        );
+        return q.promise;
+      };
       
       // Returns the full absolute path from the root to the FileEntry
       api.getFileFullPath = function (fileName) {

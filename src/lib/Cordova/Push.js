@@ -152,33 +152,38 @@
         var pushNotification = $window.plugins && $window.plugins.OneSignal;
 
         if (pushNotification) {
-          $log.debug('Plugin OneSignal loaded');
-        
-          var iosSettings = {};
-          iosSettings['kOSSettingsKeyAutoPrompt'] = true;
-          iosSettings['kOSSettingsKeyInAppLaunchURL'] = false;
-          
-          var didReceiveRemoteNotificationCallBack = function(jsonData) {
-            $rootScope.$emit('receive-notification', angular.toJson(jsonData));
-          };
-          var didOpenRemoteNotificationCallBack = function(jsonData) {
-            $rootScope.$emit('open-notification', angular.toJson(jsonData));
-          };
-          
-          // result.notification.payload.additionalData
+          pushNotification.setAppId(appId);
 
-          pushNotification.startInit(appId)
-          .handleNotificationReceived(didReceiveRemoteNotificationCallBack)
-          .handleNotificationOpened(didOpenRemoteNotificationCallBack)
-          .inFocusDisplaying(pushNotification.OSInFocusDisplayOption.InAppAlert)
-          .iOSSettings(iosSettings)
-          .endInit();
-          
-          pushNotification.getIds(function(ids) {
+          pushNotification.addPermissionObserver(function (stateChanges) {
+            $log.debug(
+              "Push permission state changed: " +
+                JSON.stringify(stateChanges, null, 2)
+            );
+          });
+          pushNotification.getDeviceState(function (stateChanges) {
+            $log.debug(
+              "OneSignal getDeviceState: " + JSON.stringify(stateChanges)
+            );
             var pushIds = {};
-            pushIds.token = ids.pushToken;
-            pushIds.uuid = ids.userId;
+            pushIds.token = stateChanges.pushToken;
+            pushIds.uuid = stateChanges.userId;
+
             success(pushIds);
+          });
+
+          pushNotification.setNotificationOpenedHandler(function (jsonData) {
+            $log.debug(
+              "notificationOpenedCallback: " + JSON.stringify(jsonData)
+            );
+            $rootScope.$emit("open-notification", jsonData);
+          });
+
+          //Prompts the user for notification permissions.
+          //    * Since this shows a generic native prompt, we recommend instead using an In-App Message to prompt for notification permission (See step 6) to better communicate to your users what notifications they will get.
+          pushNotification.promptForPushNotificationsWithUserResponse(function (
+            accepted
+          ) {
+            $log.debug("User accepted notifications: " + accepted);
           });
           
           pushNotification.getTags(function(tags) {

@@ -36,6 +36,7 @@ Tag and Push Release
 ```sh
 $ git tag v0.0.9
 $ git push origin v0.0.9
+// Remember to increment version on package.json
 ```
 
 4. Profit. :tada:
